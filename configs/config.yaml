@@ -1,0 +1,67 @@
+# ─── Cấu hình dự án PM2.5 Hà Nội ───
+
+project:
+  name: "Dự đoán US_AQI tại Hà Nội"
+  version: "1.0.0"
+
+# ─── Vị trí và timezone ───
+location:
+  city: "Hà Nội"
+  latitude: 21.0285
+  longitude: 105.8542
+  timezone: "Asia/Ho_Chi_Minh"
+  geoname_id: 1581130
+
+# ─── Nguồn dữ liệu ───
+data_sources:
+  open_meteo:
+    base_url: "https://air-quality-api.open-meteo.com/v1/air-quality"
+    variables:
+      - pm2_5
+      - pm10
+      - carbon_monoxide
+      - nitrogen_dioxide
+      - sulphur_dioxide
+      - ozone
+      - aerosol_optical_depth
+      - dust
+      - uv_index
+      - us_aqi
+      - european_aqi
+    frequency: "daily"  # hoặc "hourly" nếu nâng cấp
+
+# ─── Mục tiêu dự báo ───
+forecasting:
+  target: "us_aqi"
+  frequency: "daily"
+  horizons:
+    - 1   # t+1: ngày mai
+    - 3   # t+3: 3 ngày
+    - 7   # t+7: 1 tuần
+  strategy: "direct"  # Mỗi horizon 1 model riêng
+
+# ─── Đường dẫn dữ liệu ───
+paths:
+  raw_data: "data/hanoi-1581130/air_quality_historical.csv"
+  processed_dir: "data/processed"
+  features_dir: "data/features"
+  models_dir: "models"
+  figures_dir: "reports/figures"
+
+# ─── Tiêu chí đánh giá ───
+evaluation:
+  cv_method: "TimeSeriesSplit"
+  n_splits: 5
+  holdout:
+    train: 0.7
+    validation: 0.1
+    test: 0.2
+  metrics:
+    regression:
+      - MAE
+      - RMSE
+      - R2
+    classification:
+      - accuracy
+      - f1_macro
+      - confusion_matrix
