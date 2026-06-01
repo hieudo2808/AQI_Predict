@@ -8,6 +8,11 @@ import numpy as np
 DATA_URL = 'data/hanoi-1581130/air_quality_historical.csv'
 FIGURES_DIR = 'reports/figures'
 
+# ─── Thông số API & Tọa độ (Hà Nội) ───
+LATITUDE = 21.0285
+LONGITUDE = 105.8542
+TIMEZONE = "Asia/Ho_Chi_Minh"
+
 # ─── Seed & plotting ───
 RANDOM_SEED = 42
 FIGURE_SIZE = (13, 5)

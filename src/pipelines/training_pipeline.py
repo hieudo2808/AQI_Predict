@@ -1,16 +1,11 @@
 """
 ╔══════════════════════════════════════════════════════════════╗
-║  US AQI Hà Nội — Pipeline Runner (Hourly, Multi-Horizon)   ║
-║  Chạy: python -m src.main                                  ║
+║  US AQI Hà Nội — Training Pipeline                         ║
+║  Chạy: python -m src.pipelines.training_pipeline             ║
 ╚══════════════════════════════════════════════════════════════╝
 
-Thứ tự pipeline:
-  Bước 1+2: Ingest + Preprocess (ETL)
-  Bước 3:   Feature Engineering + Multi-Horizon Targets
-  Bước 4:   Huấn luyện & Lưu mô hình (XGBoost + SARIMA × 3 horizons)
-  Bước 5:   Backtesting 5 kịch bản (K1–K5) + Confusion Matrix
-  Bước 6:   EDA Plots (11 biểu đồ bắt buộc)
-  Bước 7:   Explainability (SHAP Summary + Waterfall)
+Pipeline chuyên dùng để retrain mô hình định kỳ (vd: mỗi tuần/tháng).
+Yêu cầu Ingestion và Feature Pipeline đã được chạy trước đó.
 """
 import logging
 import os
@@ -25,9 +20,6 @@ from src.config import (
     DEFAULT_HORIZON, FEATURES, FIGURES_DIR,
     HORIZONS, TRAIN_RATIO, VALID_RATIO,
 )
-from src.etl.build_features import build_all_features
-from src.data.load_data import load_raw_data
-from src.etl.preprocess import preprocess
 from src.modeling.train import (
     prepare_data,
     train_and_save_models,
@@ -43,67 +35,29 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def run_pipeline(
+def run_training_pipeline(
     horizons: list | None = None,
     save_models: bool = True,
     models_dir: str = 'models',
 ) -> dict | None:
-    """
-    Chạy toàn bộ pipeline từ Ingest đến Explainability.
-
-    Parameters:
-        horizons (list, optional): Danh sách horizons. Mặc định HORIZONS từ config.
-        save_models (bool): Có lưu mô hình vào models_dir không.
-        models_dir (str): Thư mục lưu mô hình.
-
-    Returns:
-        dict: Kết quả pipeline gồm df, backtest_results, và paths.
-    """
     start_time = time.time()
     h_list = horizons or HORIZONS
     os.makedirs(models_dir, exist_ok=True)
     os.makedirs(FIGURES_DIR, exist_ok=True)
 
-    # ════════════════════════════════════════════════════
-    # BƯỚC 1+2: INGEST + PREPROCESS (ETL)
-    # ════════════════════════════════════════════════════
-    logger.info('=' * 60)
-    logger.info('BƯỚC 1+2: Nạp dữ liệu thô và Tiền xử lý')
-    logger.info('=' * 60)
-
     features_path = 'data/features/features_targets.parquet'
-    if os.path.exists(features_path):
-        logger.info('Tim thay features_targets.parquet — bo qua lai ETL.')
-        df = pd.read_parquet(features_path)
-    else:
-        logger.info('Khong tim thay features cache, chay ETL day du...')
-        try:
-            df_raw = load_raw_data()
-            if df_raw is None or df_raw.empty:
-                logger.error('ETL that bai (khong co du lieu tho). Dung pipeline.')
-                return None
-            df = preprocess(df_raw)
-        except Exception as e:
-            logger.error('Loi trong qua trinh load hoac preprocess: %s', e)
-            return None
+    if not os.path.exists(features_path):
+        logger.error(f'Không tìm thấy {features_path}. Vui lòng chạy Feature Pipeline trước.')
+        return None
 
-        # ════════════════════════════════════════════════════
-        # BƯỚC 3: FEATURE ENGINEERING + MULTI-HORIZON TARGETS
-        # ════════════════════════════════════════════════════
-        logger.info('=' * 60)
-        logger.info('BUOC 3: Feature Engineering + Multi-Horizon Targets')
-        logger.info('=' * 60)
-        df = build_all_features(df, horizons=h_list)
-        df.to_parquet(features_path)
-        logger.info('Da luu features_targets.parquet.')
-
+    logger.info('=' * 60)
+    logger.info('BƯỚC 1: Load dữ liệu Features')
+    logger.info('=' * 60)
+    df = pd.read_parquet(features_path)
     logger.info('Dataset: %d dòng × %d cột', len(df), len(df.columns))
 
-    # ════════════════════════════════════════════════════
-    # BƯỚC 4: HUẤN LUYỆN & LƯU MÔ HÌNH
-    # ════════════════════════════════════════════════════
     logger.info('=' * 60)
-    logger.info('BƯỚC 4: Huấn luyện & Lưu mô hình (%s)', h_list)
+    logger.info('BƯỚC 2: Huấn luyện & Lưu mô hình (%s)', h_list)
     logger.info('=' * 60)
 
     if save_models:
@@ -111,14 +65,10 @@ def run_pipeline(
     else:
         logger.info('save_models=False — bỏ qua huấn luyện lại.')
 
-    # ════════════════════════════════════════════════════
-    # BƯỚC 5: BACKTESTING 5 KỊCH BẢN
-    # ════════════════════════════════════════════════════
     logger.info('=' * 60)
-    logger.info('BƯỚC 5: Backtesting 5 kịch bản (K1–K5)')
+    logger.info('BƯỚC 3: Backtesting 5 kịch bản (K1–K5)')
     logger.info('=' * 60)
 
-    # Xây dựng test_df và predictions từ tập test period
     n = len(df)
     valid_end = int(n * (TRAIN_RATIO + VALID_RATIO))
     test_df = df.iloc[valid_end:].copy()
@@ -130,13 +80,11 @@ def run_pipeline(
     for h in h_list:
         xgb_path = os.path.join(models_dir, f'xgb_t{h}.json')
         if not os.path.exists(xgb_path):
-            logger.warning('Khong tim thay %s — bo qua horizon t+%d.', xgb_path, h)
             continue
         data_h = prepare_data(df, horizon=h)
         model_h = xgb.XGBRegressor()
         model_h.load_model(xgb_path)
         preds = model_h.predict(data_h['X_test'])
-        # Align predictions sang index cua test_df (co the co do lech NaN cuoi)
         pred_series = pd.Series(preds, index=data_h['X_test'].index)
         y_pred_np[h] = pred_series.reindex(test_df.index).values
 
@@ -150,14 +98,9 @@ def run_pipeline(
         )
         _print_backtest_summary(backtest_results)
 
-    # ════════════════════════════════════════════════════
-    # BƯỚC 6: EDA PLOTS (11 biểu đồ bắt buộc)
-    # ════════════════════════════════════════════════════
     logger.info('=' * 60)
-    logger.info('BƯỚC 6: EDA Plots (11 biểu đồ)')
+    logger.info('BƯỚC 4: EDA Plots (11 biểu đồ)')
     logger.info('=' * 60)
-
-    # EDA cần DataFrame có cột 'pm2_5'; eda.py dùng dữ liệu giờ
     df_eda = df.copy()
     if isinstance(df_eda.index, pd.DatetimeIndex):
         df_eda = df_eda.reset_index().rename(
@@ -165,11 +108,8 @@ def run_pipeline(
         )
     generate_all_eda_plots(df_eda, save_dir=FIGURES_DIR)
 
-    # ════════════════════════════════════════════════════
-    # BƯỚC 7: EXPLAINABILITY (SHAP Summary + Waterfall)
-    # ════════════════════════════════════════════════════
     logger.info('=' * 60)
-    logger.info('BƯỚC 7: Explainability (SHAP Summary + Waterfall)')
+    logger.info('BƯỚC 5: Explainability (SHAP Summary + Waterfall)')
     logger.info('=' * 60)
 
     default_h = DEFAULT_HORIZON if DEFAULT_HORIZON in h_list else h_list[0]
@@ -181,7 +121,6 @@ def run_pipeline(
         best_model.load_model(xgb_default_path)
         best_model_name = f'XGBoost_t{default_h}'
 
-        # Lưu best_model.joblib để dashboard Streamlit dùng
         joblib.dump(best_model, os.path.join(models_dir, 'best_model.joblib'))
         logger.info('Đã lưu best_model.joblib.')
 
@@ -196,7 +135,7 @@ def run_pipeline(
 
     elapsed = time.time() - start_time
     logger.info('=' * 60)
-    logger.info('HOÀN TẤT! Tổng thời gian: %.1fs', elapsed)
+    logger.info('HOÀN TẤT TRAINING PIPELINE! Tổng thời gian: %.1fs', elapsed)
     logger.info('=' * 60)
 
     return {
@@ -207,7 +146,6 @@ def run_pipeline(
 
 
 def _print_backtest_summary(results: dict) -> None:
-    """In bảng kết quả 5 kịch bản backtesting ra màn hình."""
     print('\n📊 BẢNG TỔNG HỢP 5 KỊCH BẢN BACKTESTING (XGBoost):')
     print('=' * 70)
     for scenario in ['K1', 'K2', 'K3']:
@@ -235,4 +173,4 @@ def _print_backtest_summary(results: dict) -> None:
 
 
 if __name__ == '__main__':
-    run_pipeline()
+    run_training_pipeline()

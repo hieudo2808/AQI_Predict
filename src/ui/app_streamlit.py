@@ -18,6 +18,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')
 from src.ui.map_heatmap import create_aqi_heatmap
 from src.config import FIGURES_DIR, FEATURES
 from src.aqi_formula import pm25_to_aqi, aqi_to_level
+from src.pipelines.prediction_pipeline import check_data_freshness, StaleDataError
 
 # Config giao diện Streamlit
 st.set_page_config(page_title="Hanoi AQI Live & Forecast Dashboard", page_icon="🌤️", layout="wide")
@@ -68,6 +69,11 @@ df = load_data()
 # ─── 2. HEADER DỰ ÁN ───
 st.title("🛡️ Hệ Thống Live-Monitor & Dự Báo Ô Nhiễm PM2.5 Hà Nội")
 st.markdown("Giám sát chất lượng không khí thời gian thực và cung cấp cảnh báo AI đa khung thời gian (Multi-Horizon).")
+
+try:
+    check_data_freshness(max_age_hours=6)
+except StaleDataError as e:
+    st.error(f"🚨 **CẢNH BÁO DỮ LIỆU CŨ:** {e}")
 
 if df.empty:
     st.warning("⚠️ Dữ liệu đang được cập nhật, vui lòng chạy pipeline chính để khởi tạo.")
