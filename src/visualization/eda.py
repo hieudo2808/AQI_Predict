@@ -3,6 +3,7 @@ Module Phân tích Khám phá Dữ liệu (EDA) và Trực quan hóa cho chuỗi
 Bao gồm bộ 9 biểu đồ bắt buộc theo Kế hoạch Hoàn Chỉnh.
 """
 import os
+import warnings
 import logging
 import matplotlib
 # Thiết lập backend Agg để không mở GUI popup (Non-interactive)
@@ -93,7 +94,9 @@ def plot_03_box_month(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     df_plot['month'] = df_plot.index.month
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    sns.boxplot(x='month', y=TARGET, data=df_plot, ax=ax, palette='coolwarm')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
+        sns.boxplot(x='month', y=TARGET, hue='month', data=df_plot, ax=ax, palette='coolwarm', legend=False)
     
     ax.set_title('03. Phân phối nồng độ PM2.5 theo từng tháng trong năm (Tính mùa vụ)')
     ax.set_xlabel('Tháng trong năm')
@@ -116,7 +119,9 @@ def plot_04_box_hour(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     df_plot['hour'] = df_plot.index.hour
 
     fig, ax = plt.subplots(figsize=(14, 6))
-    sns.boxplot(x='hour', y=TARGET, data=df_plot, ax=ax, palette='husl')
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
+        sns.boxplot(x='hour', y=TARGET, hue='hour', data=df_plot, ax=ax, palette='husl', legend=False)
     
     ax.set_title('04. Phân phối nồng độ PM2.5 theo giờ trong ngày')
     ax.set_xlabel('Giờ trong ngày')
@@ -199,9 +204,9 @@ def plot_08_missingness(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     cols = ['pm2_5', 'pm10', 'co', 'no2', 'so2', 'ozone', 'temperature_2m']
     cols_to_check = [c for c in cols if c in df.columns]
     
-    # Tính tỷ lệ missing (%) theo từng tháng
-    df_missing = df[cols_to_check].isnull().groupby(df.index.to_period('M')).mean() * 100
-    df_missing.index = df_missing.index.astype(str)
+    # Dùng pd.Grouper thay vì to_period để giữ timezone-aware DatetimeIndex
+    df_missing = df[cols_to_check].isnull().groupby(pd.Grouper(freq='ME')).mean() * 100
+    df_missing.index = df_missing.index.strftime('%Y-%m')
 
     fig, ax = plt.subplots(figsize=(12, 6))
     df_missing.plot(kind='bar', stacked=True, ax=ax, colormap='viridis', edgecolor='white')

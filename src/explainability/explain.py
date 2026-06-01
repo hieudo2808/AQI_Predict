@@ -3,6 +3,7 @@ Module tạo khả năng diễn giải cho mô hình Machine Learning (Explainab
 Sử dụng thư viện SHAP và tính toán Permutation Importance.
 """
 import os
+import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import shap
@@ -28,7 +29,7 @@ def plot_permutation_importance(model, X_test, y_test, save_path=None, show=Fals
     fig, ax = plt.subplots(figsize=(10, 8))
     ax.boxplot(
         result.importances[sorted_idx].T,
-        vert=False
+        orientation='horizontal'
     )
     ax.set_title("Permutation Importances (Test Set)")
     fig.tight_layout()
@@ -48,24 +49,29 @@ def plot_shap_summary(model, X_train, save_path=None, show=False):
     create_explain_dir()
     print("📈 Đang tạo SHAP Explainer (Sẽ tốn chút thời gian)...")
     try:
-        # Nếu là mô hình wrapper của xgboost/LightGBM
-        explainer = shap.TreeExplainer(model)
-        # Chỉ giới hạn phân tích SHAP trên 1000 mẫu để tăng tốc
-        X_sample = X_train.sample(min(SHAP_MAX_SAMPLES, len(X_train)), random_state=42)
-        shap_values = explainer.shap_values(X_sample)
-        
-        # Plot
-        fig, ax = plt.subplots(figsize=(10, 6))
-        shap.summary_plot(shap_values, X_sample, show=False)
-        plt.title('SHAP Summary (Feature contribution to PM2.5 Prediction)')
-        
+        # Suppress FutureWarning về np.random.seed từ SHAP nội bộ.
+        # Warning này bị raise trong shap_values() và có thể bị catch như Exception.
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=FutureWarning)
+            warnings.filterwarnings('ignore', category=PendingDeprecationWarning)
+            # Nếu là mô hình wrapper của xgboost/LightGBM
+            explainer = shap.TreeExplainer(model)
+            # Chỉ giới hạn phân tích SHAP trên 1000 mẫu để tăng tốc
+            X_sample = X_train.sample(min(SHAP_MAX_SAMPLES, len(X_train)), random_state=42)
+            shap_values = explainer.shap_values(X_sample)
+
+            # Plot
+            fig, ax = plt.subplots(figsize=(10, 6))
+            shap.summary_plot(shap_values, X_sample, show=False)
+            plt.title('SHAP Summary (Feature contribution to PM2.5 Prediction)')
+
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             print(f"✅ Đã kết xuất SHAP Summary tới {save_path}")
         if show:
             plt.show()
         plt.close()
-            
+
     except Exception as e:
         print(f"⚠️ SHAP Summary Error (Chỉ khả dụng trên Tree Models): {e}")
 

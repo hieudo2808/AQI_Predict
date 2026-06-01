@@ -26,7 +26,8 @@ from src.config import (
     HORIZONS, TRAIN_RATIO, VALID_RATIO,
 )
 from src.etl.build_features import build_all_features
-from src.etl.clean_standardize import run_clean_standardize
+from src.data.load_data import load_raw_data
+from src.etl.preprocess import preprocess
 from src.modeling.train import (
     prepare_data,
     train_and_save_models,
@@ -76,9 +77,14 @@ def run_pipeline(
         df = pd.read_parquet(features_path)
     else:
         logger.info('Khong tim thay features cache, chay ETL day du...')
-        df = run_clean_standardize()
-        if df is None or df.empty:
-            logger.error('ETL that bai. Dung pipeline.')
+        try:
+            df_raw = load_raw_data()
+            if df_raw is None or df_raw.empty:
+                logger.error('ETL that bai (khong co du lieu tho). Dung pipeline.')
+                return None
+            df = preprocess(df_raw)
+        except Exception as e:
+            logger.error('Loi trong qua trinh load hoac preprocess: %s', e)
             return None
 
         # ════════════════════════════════════════════════════
