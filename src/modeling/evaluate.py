@@ -11,8 +11,9 @@ import seaborn as sns
 from sklearn.metrics import mean_absolute_error, mean_squared_error, f1_score, confusion_matrix
 from src.config import TARGET, FIGURES_DIR
 from src.aqi_formula import pm25_to_aqi, aqi_to_level
+from src.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("Evaluate")
 
 # Danh sách 6 mức AQI chuẩn của EPA
 AQI_CLASSES = [
@@ -64,7 +65,7 @@ def plot_confusion_matrix(cm: np.ndarray, horizon_label: str, model_name: str, s
     save_path = os.path.join(save_dir, f'cm_{model_name.lower().replace(" ", "_")}_{horizon_label.lower()}.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu confusion matrix: {save_path}")
+    logger.info(f"Đã lưu confusion matrix: {save_path}")
 
 
 def run_5_backtesting_scenarios(test_df: pd.DataFrame,
@@ -83,7 +84,7 @@ def run_5_backtesting_scenarios(test_df: pd.DataFrame,
     Returns:
         dict: Dict chứa kết quả chi tiết của 5 kịch bản.
     """
-    logger.info(f"🧪 Bắt đầu đánh giá 5 kịch bản backtesting cho {model_name}...")
+    logger.info(f"Bắt đầu đánh giá 5 kịch bản backtesting cho {model_name}...")
     results = {}
     
     # Đảm bảo cột date ở định dạng datetime

@@ -13,6 +13,10 @@ import pandas as pd
 from datetime import datetime, date, timedelta
 import requests
 
+from src.utils.logger import get_logger
+
+logger = get_logger("FetchOpenMeteo")
+
 HANOI_LAT, HANOI_LON = 21.0245, 105.8412
 
 
@@ -58,7 +62,7 @@ def append_and_save_parquet(df_new: pd.DataFrame, filepath: str):
             df_combined = df_combined.loc[~df_combined.index.duplicated(keep='last')]
             df_combined = df_combined.sort_index()
         except Exception as e:
-            print(f"⚠️ Lỗi khi đọc file cũ {filepath}: {e}. Ghi đè file mới.")
+            logger.warning(f"Lỗi khi đọc file cũ {filepath}: {e}. Ghi đè file mới.")
             df_combined = df_new.sort_index()
     else:
         df_combined = df_new.sort_index()
@@ -75,7 +79,7 @@ def main(start_date=None, end_date=None):
         start_date = (today - timedelta(days=30)).isoformat()
         
     validate_dates(start_date, end_date)
-    print(f"🔄 Bắt đầu crawl dữ liệu từ {start_date} đến {end_date}...")
+    logger.info(f"Bắt đầu crawl dữ liệu từ {start_date} đến {end_date}...")
 
     # 1. Air Quality Ingestion
     aq_url = "https://air-quality-api.open-meteo.com/v1/air-quality"
@@ -90,7 +94,7 @@ def main(start_date=None, end_date=None):
     
     df_aq_new = fetch_hourly_data(aq_url, aq_params)
     if df_aq_new.empty:
-        print("❌ Ingestion AQ thất bại: Không có dữ liệu hourly.")
+        logger.warning("Ingestion AQ thất bại: Không có dữ liệu hourly.")
         return
         
     # Standardize names
@@ -105,7 +109,7 @@ def main(start_date=None, end_date=None):
     validate_freshness(df_aq_new)
     aq_filepath = 'data/raw/open_meteo_aq.parquet'
     df_aq = append_and_save_parquet(df_aq_new, aq_filepath)
-    print(f"✅ Đã lưu/cập nhật dữ liệu AQ thô tại {aq_filepath} (Tổng cộng: {len(df_aq)} dòng)")
+    logger.info(f"Đã lưu/cập nhật dữ liệu AQ thô tại {aq_filepath} (Tổng cộng: {len(df_aq)} dòng)")
 
     # 2. Weather Ingestion
     weather_url = "https://archive-api.open-meteo.com/v1/archive"
@@ -120,13 +124,13 @@ def main(start_date=None, end_date=None):
     
     df_weather_new = fetch_hourly_data(weather_url, weather_params)
     if df_weather_new.empty:
-        print("❌ Ingestion Weather thất bại: Không có dữ liệu hourly.")
+        logger.warning("Ingestion Weather thất bại: Không có dữ liệu hourly.")
         return
         
     validate_freshness(df_weather_new)
     weather_filepath = 'data/raw/open_meteo_weather.parquet'
     df_weather = append_and_save_parquet(df_weather_new, weather_filepath)
-    print(f"✅ Đã lưu/cập nhật dữ liệu Weather thô tại {weather_filepath} (Tổng cộng: {len(df_weather)} dòng)")
+    logger.info(f"Đã lưu/cập nhật dữ liệu Weather thô tại {weather_filepath} (Tổng cộng: {len(df_weather)} dòng)")
 
     # 3. Ghi crawl log
     log_path = 'data/raw/crawl_log.json'
@@ -143,7 +147,7 @@ def main(start_date=None, end_date=None):
     }
     with open(log_path, 'w', encoding='utf-8') as f:
         json.dump(log_data, f, ensure_ascii=False, indent=2)
-    print(f"📝 Đã cập nhật crawl log tại: {log_path}")
+    logger.info(f"Đã cập nhật crawl log tại: {log_path}")
 
 
 if __name__ == "__main__":

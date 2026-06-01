@@ -21,6 +21,9 @@ from src.config import (
     MODEL_CONFIGS, RANDOM_SEED, HORIZONS, CV_N_SPLITS,
 )
 from src.modeling.wrappers import ProphetWrapper, SARIMAXWrapper
+from src.utils.logger import get_logger
+
+logger = get_logger("Train")
 
 
 # ═════════════════════════════════════════════════════════════
@@ -69,12 +72,7 @@ def prepare_data(df, features=None, horizon=1):
 
     dates_test = df_h['date'].iloc[valid_end:] if 'date' in df_h.columns else None
 
-    print(f'📐 Horizon t+{horizon}:')
-    print(f'   Features: {len(feat)}')
-    print(f'   Train:      {len(X_train):>5} mẫu')
-    print(f'   Validation: {len(X_valid):>5} mẫu')
-    print(f'   Test:       {len(X_test):>5} mẫu')
-    print(f'   Target:     {target_col}')
+    logger.info(f"Horizon t+{horizon}: Features: {len(feat)} | Train: {len(X_train)} | Valid: {len(X_valid)} | Test: {len(X_test)} | Target: {target_col}")
 
     return {
         'X_train': X_train, 'X_valid': X_valid, 'X_test': X_test,
@@ -188,7 +186,7 @@ def train_evaluate(name, model, X_train, y_train, X_test, y_test):
     rmse = np.sqrt(mean_squared_error(y_test, pred))
     r2 = r2_score(y_test, pred)
 
-    print(f'  {name:<25} │ MAE={mae:6.2f} │ RMSE={rmse:6.2f} │ R²={r2:.4f}')
+    logger.info(f'[{name:<20}] MAE={mae:6.2f} | RMSE={rmse:6.2f} | R2={r2:.4f}')
 
     return {
         'name': name,
@@ -238,9 +236,7 @@ def run_cv(name, model_class, model_params, X, y, n_splits=None):
         'r2_std': round(float(np.std(r2_list)), 4),
     }
 
-    print(f'  {name:<25} │ MAE={result["mae_mean"]:5.2f}±{result["mae_std"]:.2f} '
-          f'│ RMSE={result["rmse_mean"]:5.2f}±{result["rmse_std"]:.2f} '
-          f'│ R²={result["r2_mean"]:.4f}±{result["r2_std"]:.4f}')
+    logger.info(f'[{name:<20}] CV MAE={result["mae_mean"]:5.2f}±{result["mae_std"]:.2f} | RMSE={result["rmse_mean"]:5.2f}±{result["rmse_std"]:.2f} | R2={result["r2_mean"]:.4f}')
 
     return result
 
@@ -265,10 +261,8 @@ def run_all_models(data_dict):
     y_test = data_dict['y_test']
     horizon = data_dict['horizon']
 
-    print(f'\n🚀 Huấn luyện cho horizon t+{horizon}...\n')
-    print(f'  {"Mô hình":<25} │ {"MAE":>10} │ {"RMSE":>10} │ {"R²":>8}')
-    print('  ' + '─' * 60)
-
+    logger.info(f'Bắt đầu huấn luyện cho horizon t+{horizon}...')
+    
     # ─── Baseline ───
     results = [
         naive_persistence(y_train, y_test, horizon),
@@ -276,9 +270,7 @@ def run_all_models(data_dict):
     ]
     # In kết quả baseline
     for r in results:
-        print(f'  {r["name"]:<25} │ MAE={r["MAE"]:6.2f} │ RMSE={r["RMSE"]:6.2f} │ R²={r["R2"]:.4f}')
-
-    print('  ' + '─' * 60)
+        logger.info(f'[{r["name"]:<20}] MAE={r["MAE"]:6.2f} | RMSE={r["RMSE"]:6.2f} | R2={r["R2"]:.4f}')
 
     # ─── ML Models ───
     results.extend([
@@ -314,7 +306,7 @@ def run_all_models(data_dict):
         ),
     ])
 
-    print('\n✅ Hoàn thành huấn luyện!')
+    logger.info('Hoàn thành huấn luyện tất cả mô hình!')
     return results
 
 
@@ -332,9 +324,7 @@ def run_cv_all_models(data_dict):
     y_train = data_dict['y_train']
     horizon = data_dict['horizon']
 
-    print(f'\n📊 TimeSeriesSplit CV (k={CV_N_SPLITS}) cho horizon t+{horizon}...\n')
-    print(f'  {"Mô hình":<25} │ {"MAE (mean±std)":>18} │ {"RMSE (mean±std)":>18} │ {"R² (mean±std)":>18}')
-    print('  ' + '─' * 80)
+    logger.info(f'TimeSeriesSplit CV (k={CV_N_SPLITS}) cho horizon t+{horizon}...')
 
     cv_results = [
         run_cv('Linear Regression', LinearRegression, {}, X_train, y_train),
@@ -369,11 +359,10 @@ def compare_models(results):
     df_results['Xếp hạng'] = df_results['MAE'].rank(ascending=True).astype(int)
     df_results = df_results.sort_values('MAE', ascending=True)
 
-    print('📋 Bảng so sánh kết quả:\n')
-    print(df_results.to_string())
+    logger.info('Bảng so sánh kết quả:\n' + df_results.to_string())
 
     best = df_results.index[0]
-    print(f'\n🏆 Mô hình tốt nhất: {best}')
+    logger.info(f'Mô hình tốt nhất: {best}')
 
     return df_results
 
@@ -392,8 +381,7 @@ def compare_cv_results(cv_results):
     df['Xếp hạng'] = df['mae_mean'].rank(ascending=True).astype(int)
     df = df.sort_values('mae_mean', ascending=True)
 
-    print('\n📋 Bảng so sánh CV:\n')
-    print(df.to_string())
+    logger.info('Bảng so sánh CV:\n' + df.to_string())
 
     return df
 
@@ -427,7 +415,7 @@ def train_and_save_models(df, features=None, horizons=None, save_dir='models'):
         
         xgb_path = os.path.join(save_dir, f'xgb_t{h}.json')
         xgb_model.save_model(xgb_path)
-        print(f"🏆 Đã lưu mô hình XGBoost horizon t+{h}h vào: {xgb_path}")
+        logger.info(f"Đã lưu mô hình XGBoost horizon t+{h}h vào: {xgb_path}")
         
         # 2. Huấn luyện SARIMA
         sarima_params = MODEL_CONFIGS['SARIMAX']
@@ -437,4 +425,4 @@ def train_and_save_models(df, features=None, horizons=None, save_dir='models'):
         sarima_path = os.path.join(save_dir, f'sarima_t{h}.pkl')
         with open(sarima_path, 'wb') as f:
             pickle.dump(sarima_model, f)
-        print(f"🏆 Đã lưu mô hình SARIMA horizon t+{h}h vào: {sarima_path}")
+        logger.info(f"Đã lưu mô hình SARIMA horizon t+{h}h vào: {sarima_path}")

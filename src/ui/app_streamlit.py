@@ -32,7 +32,7 @@ def load_data():
         # Fallback nếu không có parquet thì đọc dataset processed
         path = "data/processed/aq_hourly_clean.parquet"
         if not os.path.exists(path):
-            st.error(f"❌ Không tìm thấy dữ liệu tại data/features/ hoặc data/processed/. Vui lòng chạy pipeline trước.")
+            st.error(f"Không tìm thấy dữ liệu tại data/features/ hoặc data/processed/. Vui lòng chạy pipeline trước.")
             return pd.DataFrame()
             
     df = pd.read_parquet(path)
@@ -67,16 +67,16 @@ def load_horizon_model(horizon):
 df = load_data()
 
 # ─── 2. HEADER DỰ ÁN ───
-st.title("🛡️ Hệ Thống Live-Monitor & Dự Báo Ô Nhiễm PM2.5 Hà Nội")
+st.title("Hệ Thống Live-Monitor & Dự Báo Ô Nhiễm PM2.5 Hà Nội")
 st.markdown("Giám sát chất lượng không khí thời gian thực và cung cấp cảnh báo AI đa khung thời gian (Multi-Horizon).")
 
 try:
     check_data_freshness(max_age_hours=6)
 except StaleDataError as e:
-    st.error(f"🚨 **CẢNH BÁO DỮ LIỆU CŨ:** {e}")
+    st.error(f"**CẢNH BÁO DỮ LIỆU CŨ:** {e}")
 
 if df.empty:
-    st.warning("⚠️ Dữ liệu đang được cập nhật, vui lòng chạy pipeline chính để khởi tạo.")
+    st.warning("Dữ liệu đang được cập nhật, vui lòng chạy pipeline chính để khởi tạo.")
     st.stop()
 
 # Lấy thông tin quan trắc mới nhất
@@ -103,17 +103,17 @@ st.markdown(f"""
 
 # ─── 3. KHỐI KHUYẾN NGHỊ SỨC KHỎE CHI TIẾT ───
 advice_dict = {
-    'Good': "🌱 Chất lượng không khí tuyệt vời và an toàn cho mọi người. Bạn nên tham gia các hoạt động thể dục thể thao ngoài trời.",
-    'Moderate': "💡 Chất lượng không khí ở mức chấp nhận được. Tuy nhiên, người cực kỳ nhạy cảm với ô nhiễm (hen suyễn, hô hấp yếu) nên hạn chế hoạt động ngoài trời kéo dài nếu cảm thấy mệt mỏi.",
-    'Unhealthy for Sensitive': "⚠️ Nhóm nhạy cảm (trẻ em, người già, phụ nữ mang thai và người có bệnh tim mạch/hô hấp) nên hạn chế hoạt động mạnh ngoài trời kéo dài. Nên đeo khẩu trang lọc bụi khi đi ra đường.",
-    'Unhealthy': "🚨 Mức độ ô nhiễm có hại cho sức khỏe cộng đồng. Tất cả mọi người nên hạn chế hoạt động thể lực ngoài trời quá lâu. Bắt buộc đeo khẩu trang N95 khi di chuyển bên ngoài.",
-    'Very Unhealthy': "☣️ Cảnh báo nghiêm trọng về sức khỏe. Tất cả mọi người nên tránh hoạt động ngoài trời hoàn toàn. Đóng các cửa sổ trong phòng và sử dụng máy lọc không khí trong nhà.",
-    'Hazardous': "💀 Tình trạng khẩn cấp toàn diện. Tránh ra ngoài tuyệt đối. Mọi người nên ở trong nhà kín, bật máy lọc không khí và chuẩn bị các biện pháp y tế hỗ trợ nếu cần thiết."
+    'Good': "Chất lượng không khí tuyệt vời và an toàn cho mọi người. Bạn nên tham gia các hoạt động thể dục thể thao ngoài trời.",
+    'Moderate': "Chất lượng không khí ở mức chấp nhận được. Tuy nhiên, người cực kỳ nhạy cảm với ô nhiễm (hen suyễn, hô hấp yếu) nên hạn chế hoạt động ngoài trời kéo dài nếu cảm thấy mệt mỏi.",
+    'Unhealthy for Sensitive': "Nhóm nhạy cảm (trẻ em, người già, phụ nữ mang thai và người có bệnh tim mạch/hô hấp) nên hạn chế hoạt động mạnh ngoài trời kéo dài. Nên đeo khẩu trang lọc bụi khi đi ra đường.",
+    'Unhealthy': "Mức độ ô nhiễm có hại cho sức khỏe cộng đồng. Tất cả mọi người nên hạn chế hoạt động thể lực ngoài trời quá lâu. Bắt buộc đeo khẩu trang N95 khi di chuyển bên ngoài.",
+    'Very Unhealthy': "Cảnh báo nghiêm trọng về sức khỏe. Tất cả mọi người nên tránh hoạt động ngoài trời hoàn toàn. Đóng các cửa sổ trong phòng và sử dụng máy lọc không khí trong nhà.",
+    'Hazardous': "Tình trạng khẩn cấp toàn diện. Tránh ra ngoài tuyệt đối. Mọi người nên ở trong nhà kín, bật máy lọc không khí và chuẩn bị các biện pháp y tế hỗ trợ nếu cần thiết."
 }
 st.info(advice_dict.get(latest_level, "Không có khuyến nghị cụ thể cho mức này."))
 
 # ─── 4. METRICS BOARD ───
-st.markdown("### 📊 Chỉ Số Đo Lường Nhanh")
+st.markdown("### Chỉ Số Đo Lường Nhanh")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Thời Gian Cập Nhật", latest_date)
 
@@ -135,7 +135,7 @@ col4.metric("Hệ Thống Trí Tuệ Nhân Tạo (AI)", model_status)
 st.markdown("---")
 
 # ─── 5. MULTI-HORIZON FORECAST ENGINE (AI DỰ BÁO) ───
-st.subheader("🔮 Trạm Dự Báo Đa Khung Thời Gian (AI Forecast Engine)")
+st.subheader("Trạm Dự Báo Đa Khung Thời Gian (AI Forecast Engine)")
 st.caption("Chọn horizon để nạp mô hình XGBoost/SARIMA tương ứng và dự báo nồng độ bụi mịn PM2.5 tiếp theo.")
 
 horizon_choice = st.radio(
@@ -165,7 +165,7 @@ if model is not None:
     # Hiển thị Card dự báo cao cấp
     st.markdown(f"""
     <div style="border: 2px solid {pred_color}; padding: 18px; border-radius: 10px; background-color: #f8f9fa; margin-top: 10px;">
-        <h4 style="margin: 0; color: #333;">🔮 KẾT QUẢ DỰ BÁO CỦA MÔ HÌNH {model_type.upper()}</h4>
+        <h4 style="margin: 0; color: #333;">KẾT QUẢ DỰ BÁO CỦA MÔ HÌNH {model_type.upper()}</h4>
         <p style="margin: 5px 0; font-size: 1.1rem;">Dự đoán cho thời điểm: <b>{pred_time}</b> (t+{horizon_choice}h)</p>
         <div style="display: flex; gap: 20px; align-items: center; margin-top: 10px;">
             <div style="padding: 10px 20px; border-radius: 6px; background-color: {pred_color}; color: {pred_text_color}; text-align: center; min-width: 140px;">
@@ -180,7 +180,7 @@ if model is not None:
     </div>
     """, unsafe_allow_html=True)
 else:
-    st.warning(f"⚠️ Không tìm thấy file mô hình tại models/xgb_t{horizon_choice}.json hoặc sarima_t{horizon_choice}.pkl. Vui lòng chạy huấn luyện trước.")
+    st.warning(f"Không tìm thấy file mô hình tại models/xgb_t{horizon_choice}.json hoặc sarima_t{horizon_choice}.pkl. Vui lòng chạy huấn luyện trước.")
 
 st.markdown("---")
 
@@ -199,7 +199,7 @@ with c2:
     st.subheader("🕵️‍♀️ Bóc Tách Não Bộ Mô Hình AI (Explainability)")
     st.caption("Ứng dụng lý thuyết trò chơi SHAP để xem các đặc trưng đóng góp như thế nào vào kết quả dự báo.")
     
-    shap_tabs = st.tabs(["📊 SHAP Summary (Tổng thể)", "💧 SHAP Waterfall (Episode cực đoan)"])
+    shap_tabs = st.tabs(["SHAP Summary (Tổng thể)", "SHAP Waterfall (Episode cực đoan)"])
     
     with shap_tabs[0]:
         shap_sum_path = os.path.join(FIGURES_DIR, "10_shap_summary.png")
@@ -218,13 +218,13 @@ with c2:
 st.markdown("---")
 
 # ─── 7. ĐÁNH GIÁ MÔ HÌNH VÀ IMPORTANCE ───
-st.subheader("📊 Đánh Giá Hiệu Năng & Tầm Quan Trọng Của Biến")
+st.subheader("Đánh Giá Hiệu Năng & Tầm Quan Trọng Của Biến")
 st.caption("Rà soát mức độ tin cậy và sự đóng góp của các biến độc lập.")
 
 colA, colB = st.columns(2)
 
 with colA:
-    st.markdown("##### 📈 Permutation Importance (Test Set)")
+    st.markdown("##### Permutation Importance (Test Set)")
     perm_path = os.path.join(FIGURES_DIR, "permutation_importance.png")
     if os.path.exists(perm_path):
         st.image(perm_path, use_column_width=True, caption="Mức độ giảm hiệu năng mô hình khi xáo trộn từng biến.")
@@ -232,7 +232,7 @@ with colA:
         st.info("Chưa sinh biểu đồ Permutation Importance.")
 
 with colB:
-    st.markdown(f"##### 🎯 Ma Trận Nhầm Lẫn (Confusion Matrix - Horizon t+{horizon_choice}h)")
+    st.markdown(f"##### Ma Trận Nhầm Lẫn (Confusion Matrix - Horizon t+{horizon_choice}h)")
     cm_path = os.path.join(FIGURES_DIR, f"cm_xgboost_t{horizon_choice}h.png")
     if os.path.exists(cm_path):
         st.image(cm_path, use_column_width=True, caption=f"Confusion Matrix phân loại AQI ở Horizon t+{horizon_choice}h.")

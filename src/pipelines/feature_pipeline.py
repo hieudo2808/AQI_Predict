@@ -1,10 +1,10 @@
 import os
 import json
-import logging
 import pandas as pd
 from datetime import datetime
+from src.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("FeaturePipeline")
 
 def should_rebuild_features(feature_metadata_path='metadata/feature_metadata.json', raw_max_time=None):
     if not os.path.exists(feature_metadata_path):
@@ -98,12 +98,21 @@ def run_feature_pipeline():
     # 4. Preprocess
     from src.etl.preprocess import preprocess
     logger.info("Bắt đầu Preprocessing...")
+    
+    # Tính missing values trước
+    missing_before = df_merged.isna().sum().sum()
+    total_cells_before = df_merged.shape[0] * df_merged.shape[1]
+    
     df_clean = preprocess(df_merged)
+    
+    missing_after = df_clean.isna().sum().sum()
+    logger.info(f"Đã xử lý nội suy Missing Values. Giảm từ {missing_before} ({missing_before/total_cells_before:.2%}) xuống {missing_after} giá trị null.")
     
     # 5. Build features
     from src.etl.build_features import build_all_features
     logger.info("Bắt đầu Build Features...")
     df_features = build_all_features(df_clean)
+    logger.info(f"Đã sinh xong {len(df_features.columns)} features. Kích thước tập dữ liệu: {df_features.shape}")
     
     # 6. Save to features_targets.parquet
     os.makedirs('data/features', exist_ok=True)
@@ -120,5 +129,4 @@ def run_feature_pipeline():
     logger.info("Feature Pipeline hoàn tất.")
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     run_feature_pipeline()

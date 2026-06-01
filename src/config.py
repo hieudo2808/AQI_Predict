@@ -12,6 +12,7 @@ FIGURES_DIR = 'reports/figures'
 LATITUDE = 21.0285
 LONGITUDE = 105.8542
 TIMEZONE = "Asia/Ho_Chi_Minh"
+OPENAQ_LOCATION_ID = 2161292  # Trạm Lưu Quang Vũ (do trạm US Embassy/AirNow cũ bị gián đoạn dữ liệu)
 
 # ─── Seed & plotting ───
 RANDOM_SEED = 42
@@ -61,14 +62,10 @@ AQI_COLORS = [
 FEATURES = [
     # Chất ô nhiễm (dùng làm input, KHÔNG phải target)
     'pm10',
-    'co',
-    'no2',
-    'so2',
+    'carbon_monoxide',
+    'nitrogen_dioxide',
+    'sulphur_dioxide',
     'ozone',
-    'aod',
-    'dust',
-    'uv',
-    'us_aqi',
 
     # Lag features pm2_5 (lịch sử)
     'pm2_5_lag_1',
@@ -105,6 +102,7 @@ FEATURES = [
     'relative_humidity_2m',
     'wind_speed_10m',
     'pressure_msl',
+    'precipitation',
 ]
 
 # ─── Cột cần loại bỏ khỏi features (tránh data leakage) ───

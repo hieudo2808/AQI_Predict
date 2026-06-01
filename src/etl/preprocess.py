@@ -102,6 +102,6 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
         if count > 0:
             logger.warning(f"Cột {col} vẫn còn {count} missing values")
 
-    logger.info("✅ Hoàn tất tiền xử lý và nội suy chuỗi thời gian")
+    logger.info("Hoàn tất tiền xử lý và nội suy chuỗi thời gian")
     return df
 

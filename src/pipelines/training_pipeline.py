@@ -7,7 +7,6 @@
 Pipeline chuyên dùng để retrain mô hình định kỳ (vd: mỗi tuần/tháng).
 Yêu cầu Ingestion và Feature Pipeline đã được chạy trước đó.
 """
-import logging
 import os
 import time
 
@@ -27,12 +26,9 @@ from src.modeling.train import (
 from src.modeling.evaluate import run_5_backtesting_scenarios
 from src.visualization.eda import generate_all_eda_plots
 from src.explainability.explain import run_explainability
+from src.utils.logger import get_logger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-)
-logger = logging.getLogger(__name__)
+logger = get_logger("TrainingPipeline")
 
 
 def run_training_pipeline(
@@ -146,30 +142,28 @@ def run_training_pipeline(
 
 
 def _print_backtest_summary(results: dict) -> None:
-    print('\n📊 BẢNG TỔNG HỢP 5 KỊCH BẢN BACKTESTING (XGBoost):')
-    print('=' * 70)
+    logger.info('BẢNG TỔNG HỢP 5 KỊCH BẢN BACKTESTING (XGBoost):')
     for scenario in ['K1', 'K2', 'K3']:
         r = results.get(scenario, {})
         h_label = {'K1': 't+1h', 'K2': 't+24h', 'K3': 't+72h'}[scenario]
-        print(
-            f'{scenario} ({h_label})'
-            f'  │ MAE: {r.get("mae", float("nan")):.2f} µg/m³'
-            f'  │ RMSE: {r.get("rmse", float("nan")):.2f} µg/m³'
-            f'  │ F1-Macro: {r.get("f1_macro", float("nan")):.3f}'
+        logger.info(
+            f'[{scenario}] ({h_label})'
+            f' | MAE: {r.get("mae", float("nan")):.2f} µg/m³'
+            f' | RMSE: {r.get("rmse", float("nan")):.2f} µg/m³'
+            f' | F1-Macro: {r.get("f1_macro", float("nan")):.3f}'
         )
     r4 = results.get('K4', {})
-    print(
-        f'K4 (Top 5% Episode >= {r4.get("threshold_95", 0):.1f})'
-        f'  │ MAE: {r4.get("mae", float("nan")):.2f} µg/m³'
-        f'  │ Recall Unhealthy+: {r4.get("recall_unhealthy", float("nan")):.3f}'
+    logger.info(
+        f'[K4] (Top 5% Episode >= {r4.get("threshold_95", 0):.1f})'
+        f' | MAE: {r4.get("mae", float("nan")):.2f} µg/m³'
+        f' | Recall Unhealthy+: {r4.get("recall_unhealthy", float("nan")):.3f}'
     )
     r5 = results.get('K5', {})
-    print(
-        f'K5 (Mùa)'
-        f'  │ Winter MAE: {r5.get("mae_winter", float("nan")):.2f} µg/m³'
-        f'  │ Summer MAE: {r5.get("mae_summer", float("nan")):.2f} µg/m³'
+    logger.info(
+        f'[K5] (Mùa)'
+        f' | Winter MAE: {r5.get("mae_winter", float("nan")):.2f} µg/m³'
+        f' | Summer MAE: {r5.get("mae_summer", float("nan")):.2f} µg/m³'
     )
-    print('=' * 70)
 
 
 if __name__ == '__main__':

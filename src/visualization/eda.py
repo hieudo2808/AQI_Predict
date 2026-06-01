@@ -15,8 +15,9 @@ import pandas as pd
 from statsmodels.tsa.seasonal import STL
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from src.config import TARGET, FIGURES_DIR, PLOT_STYLE, FONT_SIZE
+from src.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger("EDA")
 
 # Thiết lập style vẽ đồ thị chung
 sns.set_style(PLOT_STYLE)
@@ -65,7 +66,7 @@ def plot_01_ts_pm25(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     save_path = os.path.join(save_dir, '01_ts_pm25.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def plot_02_decompose_stl(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
@@ -84,7 +85,7 @@ def plot_02_decompose_stl(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None
     save_path = os.path.join(save_dir, '02_decompose_stl.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def plot_03_box_month(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
@@ -109,7 +110,7 @@ def plot_03_box_month(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     save_path = os.path.join(save_dir, '03_box_month.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def plot_04_box_hour(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
@@ -131,7 +132,7 @@ def plot_04_box_hour(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     save_path = os.path.join(save_dir, '04_box_hour.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def plot_05_heatmap_hour_day(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
@@ -156,7 +157,7 @@ def plot_05_heatmap_hour_day(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> N
     save_path = os.path.join(save_dir, '05_heatmap_hour_day.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def plot_06_acf_pacf(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
@@ -172,7 +173,7 @@ def plot_06_acf_pacf(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     save_path = os.path.join(save_dir, '06_acf_pacf.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def plot_07_corr_spearman(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
@@ -195,7 +196,7 @@ def plot_07_corr_spearman(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None
     save_path = os.path.join(save_dir, '07_corr_spearman.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def plot_08_missingness(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
@@ -220,7 +221,7 @@ def plot_08_missingness(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     save_path = os.path.join(save_dir, '08_missingness.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def plot_09_pred_vs_actual(y_true: pd.Series, y_pred: pd.Series, model_name: str, save_dir: str = FIGURES_DIR) -> None:
@@ -244,7 +245,7 @@ def plot_09_pred_vs_actual(y_true: pd.Series, y_pred: pd.Series, model_name: str
     save_path = os.path.join(save_dir, '09_pred_vs_actual.png')
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-    logger.info(f"💾 Đã lưu: {save_path}")
+    logger.info(f"Đã lưu: {save_path}")
 
 
 def generate_all_eda_plots(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
@@ -256,7 +257,7 @@ def generate_all_eda_plots(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> Non
         save_dir (str): Thư mục lưu ảnh.
     """
     os.makedirs(save_dir, exist_ok=True)
-    logger.info(f"🚀 Bắt đầu sinh toàn bộ biểu đồ EDA vào thư mục: {save_dir}")
+    logger.info(f"Bắt đầu sinh toàn bộ biểu đồ EDA vào thư mục: {save_dir}")
     
     plot_01_ts_pm25(df, save_dir)
     plot_02_decompose_stl(df, save_dir)
@@ -267,4 +268,4 @@ def generate_all_eda_plots(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> Non
     plot_07_corr_spearman(df, save_dir)
     plot_08_missingness(df, save_dir)
     
-    logger.info("✅ Hoàn tất sinh 8/9 biểu đồ EDA!")
+    logger.info("Hoàn tất sinh 8/9 biểu đồ EDA!")

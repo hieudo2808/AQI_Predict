@@ -10,6 +10,9 @@ import shap
 from sklearn.inspection import permutation_importance
 from pathlib import Path
 from src.config import FIGURES_DIR, PLOT_STYLE, SHAP_MAX_SAMPLES
+from src.utils.logger import get_logger
+
+logger = get_logger("Explainability")
 
 def create_explain_dir():
     Path(FIGURES_DIR).mkdir(parents=True, exist_ok=True)
@@ -21,7 +24,7 @@ def plot_permutation_importance(model, X_test, y_test, save_path=None, show=Fals
     trực tiếp xáo trộn dữ liệu test để xem mức giảm thiểu R2/RMSE của model độc lập.
     """
     create_explain_dir()
-    print("📈 Đang tính toán Permutation Importance...")
+    logger.info("Đang tính toán Permutation Importance...")
     result = permutation_importance(model, X_test, y_test, n_repeats=10, random_state=42, n_jobs=-1)
     
     sorted_idx = result.importances_mean.argsort()[-15:] # Lấy top 15 tính năng quan trọng nhất
@@ -39,7 +42,7 @@ def plot_permutation_importance(model, X_test, y_test, save_path=None, show=Fals
     if show:
         plt.show()
     plt.close()
-    print(f"✅ Đã kết xuất Permutation Importance tới {save_path}")
+    logger.info(f"Đã kết xuất Permutation Importance tới {save_path}")
 
 def plot_shap_summary(model, X_train, save_path=None, show=False):
     """
@@ -47,7 +50,7 @@ def plot_shap_summary(model, X_train, save_path=None, show=False):
     Lưu ý: Không dùng cho Prophet/SARIMAX.
     """
     create_explain_dir()
-    print("📈 Đang tạo SHAP Explainer (Sẽ tốn chút thời gian)...")
+    logger.info("Đang tạo SHAP Explainer (Sẽ tốn chút thời gian)...")
     try:
         # Suppress FutureWarning về np.random.seed từ SHAP nội bộ.
         # Warning này bị raise trong shap_values() và có thể bị catch như Exception.
@@ -67,25 +70,25 @@ def plot_shap_summary(model, X_train, save_path=None, show=False):
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            print(f"✅ Đã kết xuất SHAP Summary tới {save_path}")
+            logger.info(f"Đã kết xuất SHAP Summary tới {save_path}")
         if show:
             plt.show()
         plt.close()
 
     except Exception as e:
-        print(f"⚠️ SHAP Summary Error (Chỉ khả dụng trên Tree Models): {e}")
+        logger.error(f"SHAP Summary Error (Chỉ khả dụng trên Tree Models): {e}")
 
 def plot_shap_waterfall(model, X_train, X_test, y_test, save_path=None, show=False):
     """
     Tạo SHAP waterfall plot cho episode có nồng độ thực tế cao nhất.
     """
     create_explain_dir()
-    print("📈 Đang tạo SHAP Waterfall (Cho episode ô nhiễm cao nhất)...")
+    logger.info("Đang tạo SHAP Waterfall (Cho episode ô nhiễm cao nhất)...")
     try:
         # Tìm dòng có y_test cao nhất
         max_idx = y_test.idxmax()
         actual_val = y_test.loc[max_idx]
-        print(f"🔥 Episode ô nhiễm cao nhất vào lúc: {max_idx} với thực tế PM2.5 = {actual_val:.2f} µg/m³")
+        logger.info(f"Episode ô nhiễm cao nhất vào lúc: {max_idx} với thực tế PM2.5 = {actual_val:.2f} µg/m³")
         
         X_sample = X_test.loc[[max_idx]]
         
@@ -102,22 +105,20 @@ def plot_shap_waterfall(model, X_train, X_test, y_test, save_path=None, show=Fal
         
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            print(f"✅ Đã kết xuất SHAP Waterfall tới {save_path}")
+            logger.info(f"Đã kết xuất SHAP Waterfall tới {save_path}")
         if show:
             plt.show()
         plt.close()
         
     except Exception as e:
-        print(f"⚠️ SHAP Waterfall Error: {e}")
+        logger.error(f"SHAP Waterfall Error: {e}")
 
 def run_explainability(best_model_name, best_model, X_train, X_test, y_test):
     """
     Entry point sinh biểu đồ giải thích mô hình từ `train.py`.
     Tham số: tên mô hình, instance sklearn, data test.
     """
-    print('─' * 60)
-    print(f'🕵️‍♀️ EXPLAINABILITY: Phân rã hộp đen mô hình {best_model_name}')
-    print('─' * 60)
+    logger.info(f'EXPLAINABILITY: Phân rã hộp đen mô hình {best_model_name}')
     
     model = best_model
     model_name = best_model_name
@@ -125,8 +126,8 @@ def run_explainability(best_model_name, best_model, X_train, X_test, y_test):
     is_tree = any(tree in model_name for tree in ['Random Forest', 'XGBoost', 'LightGBM'])
     
     if not is_tree:
-        print(f"⚠️ Mô hình '{model_name}' không hỗ trợ tính SHAP (Chỉ khả dụng với Tree Based).")
-        print("🔄 Đang thử load XGBoost model từ models/xgb_t24.json để vẽ SHAP...")
+        logger.warning(f"Mô hình '{model_name}' không hỗ trợ tính SHAP (Chỉ khả dụng với Tree Based).")
+        logger.info("Đang thử load XGBoost model từ models/xgb_t24.json để vẽ SHAP...")
         import xgboost as xgb
         xgb_path = os.path.join("models", "xgb_t24.json")
         if os.path.exists(xgb_path):
@@ -135,11 +136,11 @@ def run_explainability(best_model_name, best_model, X_train, X_test, y_test):
                 model.load_model(xgb_path)
                 model_name = "XGBoost (Fallback)"
                 is_tree = True
-                print("✅ Tải thành công mô hình XGBoost fallback!")
+                logger.info("Tải thành công mô hình XGBoost fallback!")
             except Exception as e:
-                print(f"❌ Không thể load mô hình XGBoost fallback: {e}")
+                logger.error(f"Không thể load mô hình XGBoost fallback: {e}")
         else:
-            print(f"❌ Không tìm thấy file mô hình XGBoost tại {xgb_path}")
+            logger.warning(f"Không tìm thấy file mô hình XGBoost tại {xgb_path}")
 
     if is_tree:
         plot_permutation_importance(
@@ -157,6 +158,6 @@ def run_explainability(best_model_name, best_model, X_train, X_test, y_test):
             save_path=os.path.join(FIGURES_DIR, "11_shap_waterfall.png")
         )
     else:
-        print(f"❌ Bỏ qua vẽ SHAP vì không có mô hình Tree-based khả dụng.")
+        logger.info(f"Bỏ qua vẽ SHAP vì không có mô hình Tree-based khả dụng.")
     
-    print('✅ Khâu bóc tách giải thích hoàn tất.')
+    logger.info('Khâu bóc tách giải thích hoàn tất.')

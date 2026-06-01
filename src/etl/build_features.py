@@ -51,7 +51,7 @@ def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
     df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12)
     df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12)
 
-    logger.info("✅ Đã tạo đặc trưng thời gian và chu kỳ (cyclical features)")
+    logger.info("Đã tạo đặc trưng thời gian và chu kỳ (cyclical features)")
     return df
 
 
@@ -88,7 +88,7 @@ def add_lag_features(df: pd.DataFrame) -> pd.DataFrame:
     df['pm2_5_roll24_std'] = target_shifted.rolling(window=24).std()
     df['pm2_5_roll24_max'] = target_shifted.rolling(window=24).max()
 
-    logger.info("✅ Đã tạo lag và rolling features (không leak)")
+    logger.info("Đã tạo lag và rolling features (không leak)")
     return df
 
 
@@ -109,7 +109,7 @@ def add_trend_features(df: pd.DataFrame) -> pd.DataFrame:
     df['pm2_5_diff_1h'] = df[TARGET].diff(1)
     df['pm2_5_diff_24h'] = df[TARGET].diff(24)
 
-    logger.info("✅ Đã tạo đặc trưng trend/difference")
+    logger.info("Đã tạo đặc trưng trend/difference")
     return df
 
 
@@ -127,9 +127,9 @@ def add_ratio_features(df: pd.DataFrame) -> pd.DataFrame:
 
     if 'pm10' in df.columns:
         df['pm25_pm10_ratio'] = df[TARGET] / (df['pm10'] + 1e-6)
-        logger.info("✅ Đã tạo đặc trưng tỷ lệ PM2.5/PM10")
+        logger.info("Đã tạo đặc trưng tỷ lệ PM2.5/PM10")
     else:
-        logger.warning("⚠️ Cột pm10 không tồn tại để tính tỷ lệ pm2.5/pm10.")
+        logger.warning("Cột pm10 không tồn tại để tính tỷ lệ pm2.5/pm10.")
 
     return df
 
@@ -155,7 +155,7 @@ def add_multi_horizon_targets(df: pd.DataFrame, horizons: list = None) -> pd.Dat
         n_valid = df[col_name].notna().sum()
         logger.info(f"   → {col_name}: {n_valid} mẫu có target (mất {h} dòng cuối)")
 
-    logger.info(f"✅ Đã tạo các cột target multi-horizon: {[f't+{h}' for h in h_list]}")
+    logger.info(f"Đã tạo các cột target multi-horizon: {[f't+{h}' for h in h_list]}")
     return df
 
 
@@ -218,7 +218,7 @@ def build_all_features(df: pd.DataFrame, horizons: list = None, is_inference: bo
     df = df.reset_index()
     df = df.rename(columns={'datetime': 'date'})
 
-    logger.info(f"✅ Hoàn tất tạo đặc trưng. Dataset cuối: {len(df)} dòng.")
+    logger.info(f"Hoàn tất tạo đặc trưng. Dataset cuối: {len(df)} dòng.")
     if 'date' in df.columns and len(df) > 0:
         logger.info(f"   Thời gian: {df['date'].min()} → {df['date'].max()}")
 
