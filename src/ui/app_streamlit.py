@@ -3,20 +3,20 @@ App Streamlit cung cấp Giao diện Điều khiển (Dashboard) chất lượng
 Tích hợp Bản đồ Folium, Hệ thống Cảnh báo, và Explainability.
 Command chạy: streamlit run src/ui/app_streamlit.py
 """
-import streamlit as st
-import pandas as pd
-import numpy as np
 import os
-import joblib
-import xgboost as xgb
-from streamlit_folium import folium_static
-
 # Fix đường dẫn tuyệt đối cho import nếu chạy ngoài root dir
 import sys
+
+import joblib
+import pandas as pd
+import streamlit as st
+import xgboost as xgb
+from streamlit_folium import st_folium
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.ui.map_heatmap import create_aqi_heatmap
-from src.config import TARGET, FIGURES_DIR, FEATURES, DEFAULT_HORIZON
+from src.config import FIGURES_DIR, FEATURES
 from src.aqi_formula import pm25_to_aqi, aqi_to_level
 
 # Config giao diện Streamlit
@@ -187,7 +187,7 @@ with c1:
     
     # Tạo bản đồ Folium
     heatmap_engine = create_aqi_heatmap(latest_aqi)
-    folium_static(heatmap_engine, width=700, height=500)
+    st_folium(heatmap_engine, width=700, height=500)
 
 with c2:
     st.subheader("🕵️‍♀️ Bóc Tách Não Bộ Mô Hình AI (Explainability)")
