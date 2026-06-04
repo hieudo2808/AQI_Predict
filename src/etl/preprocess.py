@@ -58,6 +58,13 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
     # 3. Đảm bảo tần suất Hourly
     df = df.asfreq('h')
 
+    # Truncate: Cắt bỏ khoảng thời gian đầu chuỗi nếu PM2.5 hoàn toàn bị missing (VD: Từ Jan 2024 đến Oct 2025)
+    if TARGET in df.columns:
+        first_valid_target = df[TARGET].first_valid_index()
+        if first_valid_target is not None:
+            df = df.loc[first_valid_target:].copy()
+            logger.info(f"Đã cắt bỏ dữ liệu rác trước {first_valid_target} (vì không có dữ liệu đo thực tế)")
+
     # Báo cáo missingness trước xử lý
     logger.info("--- Báo cáo missingness trước xử lý ---")
     missing_before = df.isnull().sum()

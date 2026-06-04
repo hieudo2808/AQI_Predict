@@ -103,6 +103,11 @@ def run_5_backtesting_scenarios(test_df: pd.DataFrame,
         y_true_h = test_df.loc[valid_mask, target_col].values
         y_pred_h = y_pred_dict[h][valid_mask]
         
+        # Xóa các dòng NaN từ dự đoán (do quá trình shift tạo ra ở cuối chuỗi)
+        mask = ~np.isnan(y_true_h) & ~np.isnan(y_pred_h)
+        y_true_h = y_true_h[mask]
+        y_pred_h = y_pred_h[mask]
+        
         mae, rmse = evaluate_regression_metrics(y_true_h, y_pred_h)
         f1, cm = evaluate_classification_metrics(y_true_h, y_pred_h)
         
@@ -128,10 +133,15 @@ def run_5_backtesting_scenarios(test_df: pd.DataFrame,
         
         # Ngưỡng phân vị 95 (top 5% episode cao)
         threshold_95 = np.percentile(y_true_all, 95)
-        k4_mask = y_true_all >= threshold_95
+        # Xóa các dòng NaN ở y_true_h hoặc y_pred_h (chỉ ảnh hưởng phần đuôi chuỗi hoặc dòng thiếu dữ liệu)
+        mask = ~np.isnan(y_true_all) & ~np.isnan(y_pred_all)
+        y_true_h = y_true_all[mask]
+        y_pred_h = y_pred_all[mask]
         
-        y_true_k4 = y_true_all[k4_mask]
-        y_pred_k4 = y_pred_all[k4_mask]
+        k4_mask = y_true_h >= threshold_95
+        
+        y_true_k4 = y_true_h[k4_mask]
+        y_pred_k4 = y_pred_h[k4_mask]
         
         mae_k4, rmse_k4 = evaluate_regression_metrics(y_true_k4, y_pred_k4)
         
@@ -160,6 +170,9 @@ def run_5_backtesting_scenarios(test_df: pd.DataFrame,
         valid_mask = test_df[target_k5].notna()
         test_valid = test_df[valid_mask].copy()
         test_valid['pred_pm2_5'] = y_pred_dict[24][valid_mask]
+        
+        # Bỏ qua các dòng có dự đoán NaN
+        test_valid = test_valid.dropna(subset=['pred_pm2_5'])
         
         # Lọc theo tháng
         test_valid['month'] = test_valid['date'].dt.month

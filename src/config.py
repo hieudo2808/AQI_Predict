@@ -5,14 +5,13 @@ Tất cả hằng số, danh sách features, hyperparameters được định ng
 import numpy as np
 
 # ─── Đường dẫn dữ liệu ───
-DATA_URL = 'data/hanoi-1581130/air_quality_historical.csv'
 FIGURES_DIR = 'reports/figures'
 
 # ─── Thông số API & Tọa độ (Hà Nội) ───
 LATITUDE = 21.0285
 LONGITUDE = 105.8542
 TIMEZONE = "Asia/Ho_Chi_Minh"
-OPENAQ_LOCATION_ID = 2161292  # Trạm Lưu Quang Vũ (do trạm US Embassy/AirNow cũ bị gián đoạn dữ liệu)
+PURPLEAIR_SENSOR_INDEX = 96713 # Trạm AQSEA_VN_006 - Thanh Xuân Hà Nội
 
 # ─── Seed & plotting ───
 RANDOM_SEED = 42
@@ -24,7 +23,7 @@ PLOT_STYLE = 'whitegrid'
 TARGET = 'pm2_5'
 
 # ─── Multi-horizon forecasting (hourly) ───
-HORIZONS = [1, 24, 72]  # t+1h, t+24h, t+72h
+HORIZONS = [1, 24, 48, 72]  # t+1h, t+24h, t+48h, t+72h
 DEFAULT_HORIZON = 24    # Horizon mặc định khi chạy single-horizon
 FORECAST_STRATEGY = 'direct'  # Mỗi horizon 1 model riêng
 
@@ -58,14 +57,16 @@ AQI_COLORS = [
     '#7e0023',  # Maroon - Hazardous
 ]
 
-# ─── Danh sách features (35 đặc trưng) ───
-FEATURES = [
+# ─── Phân tách Features để phục vụ Đa khung thời gian (Perfect Prognosis) ───
+HISTORICAL_FEATURES = [
+    # Cờ missing
+    'pm2_5_missing_flag',
+    
+    # Nồng độ hiện hành
+    'pm2_5',
+
     # Chất ô nhiễm (dùng làm input, KHÔNG phải target)
     'pm10',
-    'carbon_monoxide',
-    'nitrogen_dioxide',
-    'sulphur_dioxide',
-    'ozone',
 
     # Lag features pm2_5 (lịch sử)
     'pm2_5_lag_1',
@@ -96,7 +97,9 @@ FEATURES = [
     # Trend features
     'pm2_5_diff_1h',
     'pm2_5_diff_24h',
+]
 
+WEATHER_FEATURES = [
     # Weather features (từ Open-Meteo Weather API)
     'temperature_2m',
     'relative_humidity_2m',
@@ -105,8 +108,9 @@ FEATURES = [
     'precipitation',
 ]
 
-# ─── Cột cần loại bỏ khỏi features (tránh data leakage) ───
-LEAKAGE_COLUMNS = ['european_aqi']
+# ─── Danh sách features (Tổng hợp 35 đặc trưng) ───
+FEATURES = HISTORICAL_FEATURES + WEATHER_FEATURES
+
 
 # ─── Tỷ lệ train/validation/test (theo thời gian) ───
 TRAIN_RATIO = 0.7

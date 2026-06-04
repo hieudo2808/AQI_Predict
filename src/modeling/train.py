@@ -30,15 +30,17 @@ logger = get_logger("Train")
 # CHIA DỮ LIỆU
 # ═════════════════════════════════════════════════════════════
 
-def prepare_data(df, features=None, horizon=1):
+def prepare_data(df, features=None, weather_cols=None, horizon=1):
     """
     Chuẩn bị dữ liệu train/validation/test cho 1 horizon cụ thể.
 
     Chia theo thời gian (KHÔNG shuffle): Train 70% / Valid 10% / Test 20%.
+    Áp dụng Perfect Prognosis nếu weather_cols được cung cấp.
 
     Parameters:
         df (pd.DataFrame): DataFrame đã có features + target columns.
         features (list, optional): Danh sách tên cột features.
+        weather_cols (list, optional): Danh sách các cột thời tiết cần được dịch chuyển.
         horizon (int): Horizon cần dự báo (1, 3, hoặc 7).
 
     Returns:
@@ -51,9 +53,18 @@ def prepare_data(df, features=None, horizon=1):
     feat = features or FEATURES
     target_col = f'target_{TARGET}_t{horizon}'
 
-    # Chỉ lấy các dòng có target hợp lệ cho horizon này
-    valid_mask = df[target_col].notna()
-    df_h = df[valid_mask].copy()
+    df_h = df.copy()
+
+    # Áp dụng Perfect Prognosis: Dịch ngược các biến thời tiết (tương lai giả lập)
+    if weather_cols:
+        logger.info(f"Đã KÍCH HOẠT Perfect Prognosis: Shift các biến thời tiết đi {-horizon} bước.")
+        for w_col in weather_cols:
+            if w_col in df_h.columns:
+                df_h[w_col] = df_h[w_col].shift(-horizon)
+
+    # Chỉ lấy các dòng có target hợp lệ cho horizon này và loại bỏ NaN do shift
+    valid_mask = df_h[target_col].notna() & df_h[feat].notna().all(axis=1)
+    df_h = df_h[valid_mask].copy()
 
     X = df_h[feat]
     y = df_h[target_col]
@@ -398,13 +409,14 @@ def train_and_save_models(df, features=None, horizons=None, save_dir='models'):
     """
     import os
     import pickle
+    from src.config import WEATHER_FEATURES
     
     os.makedirs(save_dir, exist_ok=True)
     feat = features or FEATURES
     h_list = horizons or HORIZONS
     
     for h in h_list:
-        data_dict = prepare_data(df, features=feat, horizon=h)
+        data_dict = prepare_data(df, features=feat, weather_cols=WEATHER_FEATURES, horizon=h)
         X_train = data_dict['X_train']
         y_train = data_dict['y_train']
         

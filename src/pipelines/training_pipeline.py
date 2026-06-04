@@ -17,7 +17,7 @@ import xgboost as xgb
 
 from src.config import (
     DEFAULT_HORIZON, FEATURES, FIGURES_DIR,
-    HORIZONS, TRAIN_RATIO, VALID_RATIO,
+    HORIZONS, TRAIN_RATIO, VALID_RATIO, WEATHER_FEATURES
 )
 from src.modeling.train import (
     prepare_data,
@@ -77,7 +77,7 @@ def run_training_pipeline(
         xgb_path = os.path.join(models_dir, f'xgb_t{h}.json')
         if not os.path.exists(xgb_path):
             continue
-        data_h = prepare_data(df, horizon=h)
+        data_h = prepare_data(df, weather_cols=WEATHER_FEATURES, horizon=h)
         model_h = xgb.XGBRegressor()
         model_h.load_model(xgb_path)
         preds = model_h.predict(data_h['X_test'])
@@ -109,7 +109,7 @@ def run_training_pipeline(
     logger.info('=' * 60)
 
     default_h = DEFAULT_HORIZON if DEFAULT_HORIZON in h_list else h_list[0]
-    default_data = prepare_data(df, horizon=default_h)
+    default_data = prepare_data(df, weather_cols=WEATHER_FEATURES, horizon=default_h)
 
     xgb_default_path = os.path.join(models_dir, f'xgb_t{default_h}.json')
     if os.path.exists(xgb_default_path):

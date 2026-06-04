@@ -2,7 +2,7 @@ import pandas as pd
 from src.data.ingest import (
     get_last_data_time, 
     fetch_openmeteo_data, 
-    fetch_openaq_data,
+    fetch_purpleair_data,
     append_to_datalake, 
     update_freshness_metadata
 )
@@ -24,17 +24,17 @@ def run_ingestion():
         return
 
     aq_success = True
-    # Tải dữ liệu AQ từ OpenAQ
-    logger.info(f"Đang tải Air Quality data từ OpenAQ ({last_time} đến {now})...")
+    # Tải dữ liệu AQ từ PurpleAir
+    logger.info(f"Đang tải Air Quality data từ PurpleAir ({last_time} đến {now})...")
     try:
-        df_aq = fetch_openaq_data(last_time, now)
+        df_aq = fetch_purpleair_data(last_time, now)
         if not df_aq.empty:
             append_to_datalake(df_aq, 'aq')
             logger.info(f"Đã lưu {len(df_aq)} dòng vào Data Lake (AQ).")
         else:
-            logger.warning("API OpenAQ không trả về dòng dữ liệu nào mới.")
+            logger.warning("API PurpleAir không trả về dòng dữ liệu nào mới.")
     except Exception as e:
-        logger.error(f"Lỗi khi tải dữ liệu OpenAQ: {e}")
+        logger.error(f"Lỗi khi tải dữ liệu PurpleAir: {e}")
         df_aq = pd.DataFrame()
         aq_success = False
         
