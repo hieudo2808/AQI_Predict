@@ -1,0 +1,8 @@
+{
+<<<<<<< HEAD
+    "last_data_time": "2026-06-04T20:00:00"
+=======
+    "last_data_time": "2026-06-02T09:00:00",
+    "source": "migrated_from_legacy_parquet"
+>>>>>>> c04693d9de199b76d9c111a91612fbfb68956d53
+}

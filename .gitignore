@@ -180,3 +180,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Data and models files
+data/raw/*.parquet
+data/processed/*.parquet
+data/features/*.parquet
+data/raw/crawl_log.json
+models/*.json
+models/*.pkl
+models/*.joblib
