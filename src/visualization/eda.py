@@ -4,7 +4,6 @@ Bao gồm bộ 9 biểu đồ bắt buộc theo Kế hoạch Hoàn Chỉnh.
 """
 import os
 import warnings
-import logging
 import matplotlib
 # Thiết lập backend Agg để không mở GUI popup (Non-interactive)
 matplotlib.use('Agg')
@@ -203,10 +202,19 @@ def plot_08_missingness(df: pd.DataFrame, save_dir: str = FIGURES_DIR) -> None:
     """8. Biểu đồ tỷ lệ Missing Values theo tháng của các cột chính."""
     df = _ensure_datetime_index(df)
     cols = ['pm2_5', 'pm10', 'co', 'no2', 'so2', 'ozone', 'temperature_2m']
-    cols_to_check = [c for c in cols if c in df.columns]
+    # Tìm các cột _missing_flag tương ứng
+    flag_cols = [f"{c}_missing_flag" for c in cols if f"{c}_missing_flag" in df.columns]
     
-    # Dùng pd.Grouper thay vì to_period để giữ timezone-aware DatetimeIndex
-    df_missing = df[cols_to_check].isnull().groupby(pd.Grouper(freq='ME')).mean() * 100
+    if not flag_cols:
+        # Fallback nếu không có cột _missing_flag
+        flag_cols = [c for c in cols if c in df.columns]
+        df_missing = df[flag_cols].isnull().groupby(pd.Grouper(freq='ME')).mean() * 100
+    else:
+        # Nếu có cột cờ, tính trung bình cờ (1 là missing, 0 là không)
+        df_missing = df[flag_cols].groupby(pd.Grouper(freq='ME')).mean() * 100
+        # Đổi tên cột lại cho đẹp trên biểu đồ
+        df_missing.columns = [c.replace('_missing_flag', '') for c in df_missing.columns]
+
     df_missing.index = df_missing.index.strftime('%Y-%m')
 
     fig, ax = plt.subplots(figsize=(12, 6))

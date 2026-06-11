@@ -5,11 +5,10 @@ Sử dụng thư viện SHAP và tính toán Permutation Importance.
 import os
 import warnings
 import matplotlib.pyplot as plt
-import numpy as np
 import shap
 from sklearn.inspection import permutation_importance
 from pathlib import Path
-from src.config import FIGURES_DIR, PLOT_STYLE, SHAP_MAX_SAMPLES
+from src.config import FIGURES_DIR, SHAP_MAX_SAMPLES
 from src.utils.logger import get_logger
 
 logger = get_logger("Explainability")

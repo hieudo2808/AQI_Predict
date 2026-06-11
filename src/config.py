@@ -2,7 +2,6 @@
 Cấu hình trung tâm cho project PM2.5 Hà Nội.
 Tất cả hằng số, danh sách features, hyperparameters được định nghĩa ở đây.
 """
-import numpy as np
 
 # ─── Đường dẫn dữ liệu ───
 FIGURES_DIR = 'reports/figures'

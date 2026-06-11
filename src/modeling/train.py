@@ -17,20 +17,22 @@ import xgboost as xgb
 import lightgbm as lgb
 
 from src.config import (
-    FEATURES, TARGET, TRAIN_RATIO, VALID_RATIO, TEST_RATIO,
-    MODEL_CONFIGS, RANDOM_SEED, HORIZONS, CV_N_SPLITS,
+    FEATURES, TARGET, TRAIN_RATIO, VALID_RATIO,
+    MODEL_CONFIGS, HORIZONS, CV_N_SPLITS,
 )
 from src.modeling.wrappers import ProphetWrapper, SARIMAXWrapper
 from src.utils.logger import get_logger
 
 logger = get_logger("Train")
 
+FORECAST_MODES = {'operational', 'oracle_weather'}
+
 
 # ═════════════════════════════════════════════════════════════
 # CHIA DỮ LIỆU
 # ═════════════════════════════════════════════════════════════
 
-def prepare_data(df, features=None, weather_cols=None, horizon=1):
+def prepare_data(df, features=None, weather_cols=None, horizon=1, forecast_mode='operational'):
     """
     Chuẩn bị dữ liệu train/validation/test cho 1 horizon cụ thể.
 
@@ -40,8 +42,11 @@ def prepare_data(df, features=None, weather_cols=None, horizon=1):
     Parameters:
         df (pd.DataFrame): DataFrame đã có features + target columns.
         features (list, optional): Danh sách tên cột features.
-        weather_cols (list, optional): Danh sách các cột thời tiết cần được dịch chuyển.
-        horizon (int): Horizon cần dự báo (1, 3, hoặc 7).
+        weather_cols (list, optional): Danh sách các cột thời tiết có thể dịch chuyển
+            trong chế độ oracle_weather.
+        horizon (int): Horizon cần dự báo theo giờ (1, 24, 48, hoặc 72).
+        forecast_mode (str): 'operational' không dùng actual future weather.
+            'oracle_weather' shift weather_cols để đo upper-bound Perfect Prognosis.
 
     Returns:
         dict: {
@@ -50,17 +55,22 @@ def prepare_data(df, features=None, weather_cols=None, horizon=1):
             'dates_test', 'horizon',
         }
     """
+    if forecast_mode not in FORECAST_MODES:
+        raise ValueError(f"forecast_mode phải thuộc {sorted(FORECAST_MODES)}, nhận: {forecast_mode}")
+
     feat = features or FEATURES
     target_col = f'target_{TARGET}_t{horizon}'
 
     df_h = df.copy()
 
-    # Áp dụng Perfect Prognosis: Dịch ngược các biến thời tiết (tương lai giả lập)
-    if weather_cols:
+    # Chỉ oracle_weather mới được dùng actual future weather.
+    if weather_cols and forecast_mode == 'oracle_weather':
         logger.info(f"Đã KÍCH HOẠT Perfect Prognosis: Shift các biến thời tiết đi {-horizon} bước.")
         for w_col in weather_cols:
             if w_col in df_h.columns:
                 df_h[w_col] = df_h[w_col].shift(-horizon)
+    elif weather_cols:
+        logger.info("forecast_mode=operational — không shift actual future weather.")
 
     # Chỉ lấy các dòng có target hợp lệ cho horizon này và loại bỏ NaN do shift
     valid_mask = df_h[target_col].notna() & df_h[feat].notna().all(axis=1)
@@ -90,6 +100,9 @@ def prepare_data(df, features=None, weather_cols=None, horizon=1):
         'y_train': y_train, 'y_valid': y_valid, 'y_test': y_test,
         'dates_test': dates_test,
         'horizon': horizon,
+        'forecast_mode': forecast_mode,
+        'target_col': target_col,
+        'df_h': df_h,
     }
 
 
@@ -135,7 +148,7 @@ def naive_persistence(y_train, y_test, horizon=1):
     }
 
 
-def seasonal_naive(y_train, y_test, season_period=7):
+def seasonal_naive(y_train, y_test, season_period=168, horizon=None):
     """
     Baseline Seasonal Naive: ŷ(t+h) = y(t+h−s).
 
@@ -145,11 +158,20 @@ def seasonal_naive(y_train, y_test, season_period=7):
     Parameters:
         y_train (pd.Series): Giá trị training.
         y_test (pd.Series): Giá trị thực tế test.
-        season_period (int): Chu kỳ mùa vụ (7 = tuần).
+        season_period (int): Chu kỳ mùa vụ theo số bước thời gian.
+            Với dữ liệu hourly: 24 = ngày, 168 = tuần.
+        horizon (int, optional): Horizon dự báo. Nếu season_period < horizon thì
+            baseline không hợp lệ vì cần quan sát sau forecast origin.
 
     Returns:
         dict: Kết quả {'name', 'pred', 'MAE', 'RMSE', 'R2'}
     """
+    if horizon is not None and season_period < horizon:
+        raise ValueError(
+            f"Seasonal naive không hợp lệ: season_period={season_period} < horizon={horizon}. "
+            "Điều này sẽ dùng thông tin sau forecast origin."
+        )
+
     # Vectorized: ghép chuỗi và dùng shift()
     full = pd.concat([y_train, y_test])
     shifted = full.shift(season_period)
@@ -164,7 +186,63 @@ def seasonal_naive(y_train, y_test, season_period=7):
     r2 = r2_score(y_test, pred)
 
     return {
-        'name': 'Seasonal Naive (7d)',
+        'name': f'Seasonal Naive ({season_period}h)',
+        'model': None,
+        'pred': pred,
+        'MAE': round(mae, 2),
+        'RMSE': round(rmse, 2),
+        'R2': round(r2, 4),
+    }
+
+
+def shifted_baseline(y_train, y_valid, y_test, shift_period, name, horizon=None):
+    """
+    Baseline theo shift trên chuỗi target đầy đủ train+valid+test.
+
+    y_valid được giữ trong chuỗi để không tạo khoảng hở giả giữa train và test.
+    """
+    if horizon is not None and shift_period < horizon:
+        raise ValueError(
+            f"{name} không hợp lệ: shift_period={shift_period} < horizon={horizon}."
+        )
+
+    full = pd.concat([y_train, y_valid, y_test])
+    shifted = full.shift(shift_period)
+    test_start = len(y_train) + len(y_valid)
+    pred = shifted.iloc[test_start:].values
+    train_mean = y_train.mean()
+    pred = np.where(np.isnan(pred), train_mean, pred)
+
+    mae = mean_absolute_error(y_test, pred)
+    rmse = np.sqrt(mean_squared_error(y_test, pred))
+    r2 = r2_score(y_test, pred)
+
+    return {
+        'name': name,
+        'model': None,
+        'pred': pred,
+        'MAE': round(mae, 2),
+        'RMSE': round(rmse, 2),
+        'R2': round(r2, 4),
+    }
+
+
+def rolling_mean_baseline(y_train, y_valid, y_test, window, horizon, name=None):
+    """Rolling-mean baseline chỉ dùng giá trị quan sát được tại forecast origin."""
+    full = pd.concat([y_train, y_valid, y_test])
+    observed_at_origin = full.shift(horizon)
+    rolled = observed_at_origin.rolling(window=window, min_periods=1).mean()
+    test_start = len(y_train) + len(y_valid)
+    pred = rolled.iloc[test_start:].values
+    train_mean = y_train.mean()
+    pred = np.where(np.isnan(pred), train_mean, pred)
+
+    mae = mean_absolute_error(y_test, pred)
+    rmse = np.sqrt(mean_squared_error(y_test, pred))
+    r2 = r2_score(y_test, pred)
+
+    return {
+        'name': name or f'Rolling Mean ({window}h)',
         'model': None,
         'pred': pred,
         'MAE': round(mae, 2),
@@ -268,6 +346,7 @@ def run_all_models(data_dict):
     """
     X_train = data_dict['X_train']
     y_train = data_dict['y_train']
+    y_valid = data_dict['y_valid']
     X_test = data_dict['X_test']
     y_test = data_dict['y_test']
     horizon = data_dict['horizon']
@@ -276,9 +355,19 @@ def run_all_models(data_dict):
     
     # ─── Baseline ───
     results = [
-        naive_persistence(y_train, y_test, horizon),
-        seasonal_naive(y_train, y_test, season_period=7),
+        shifted_baseline(y_train, y_valid, y_test, horizon, 'Persistence', horizon=horizon),
+        rolling_mean_baseline(y_train, y_valid, y_test, 24, horizon, 'Rolling Mean (24h)'),
+        rolling_mean_baseline(y_train, y_valid, y_test, 168, horizon, 'Rolling Mean (168h)'),
+        shifted_baseline(
+            y_train, y_valid, y_test, 168, 'Seasonal Naive (168h)', horizon=horizon
+        ),
     ]
+    if horizon <= 24:
+        results.append(
+            shifted_baseline(
+                y_train, y_valid, y_test, 24, 'Seasonal Naive (24h)', horizon=horizon
+            )
+        )
     # In kết quả baseline
     for r in results:
         logger.info(f'[{r["name"]:<20}] MAE={r["MAE"]:6.2f} | RMSE={r["RMSE"]:6.2f} | R2={r["R2"]:.4f}')

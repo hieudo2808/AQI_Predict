@@ -7,17 +7,21 @@ import os
 # Fix đường dẫn tuyệt đối cho import nếu chạy ngoài root dir
 import sys
 
-import joblib
 import pandas as pd
 import streamlit as st
-import xgboost as xgb
 from streamlit_folium import st_folium
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.ui.map_heatmap import create_aqi_heatmap
-from src.config import FIGURES_DIR, FEATURES, WEATHER_FEATURES
+from src.config import FIGURES_DIR, WEATHER_FEATURES
 from src.aqi_formula import pm25_to_aqi, aqi_to_level
+from src.modeling.champion import (
+    DEFAULT_MANIFEST_PATH,
+    apply_future_weather_if_allowed,
+    build_feature_frame,
+    load_model_for_horizon,
+)
 from src.pipelines.prediction_pipeline import check_data_freshness, StaleDataError
 from src.data.ingest import fetch_weather_forecast
 
@@ -52,18 +56,8 @@ def load_data():
 
 @st.cache_resource
 def load_horizon_model(horizon):
-    """Nạp mô hình XGBoost (hoặc SARIMA fallback) tương ứng cho horizon giờ."""
-    path = f"models/xgb_t{horizon}.json"
-    if os.path.exists(path):
-        model = xgb.XGBRegressor()
-        model.load_model(path)
-        return model, "XGBoost (JSON)"
-        
-    path_pkl = f"models/sarima_t{horizon}.pkl"
-    if os.path.exists(path_pkl):
-        return joblib.load(path_pkl), "SARIMA (PKL)"
-        
-    return None, None
+    """Nạp champion model; fallback sang legacy XGBoost/SARIMA nếu chưa export champion."""
+    return load_model_for_horizon(horizon)
 
 df = load_data()
 
@@ -111,7 +105,9 @@ latest_level, latest_color = aqi_to_level(latest_aqi)
 text_color = '#ffffff' if latest_color in ['#ff0000', '#8f3f97', '#7e0023'] else '#000000'
 
 # --- TÁCH LUỒNG 2: DỰ BÁO TỨC THỜI (NOWCAST) ---
-nowcast_model, nowcast_type = load_horizon_model(1)
+nowcast_bundle = load_horizon_model(1)
+nowcast_model = nowcast_bundle.model
+nowcast_type = nowcast_bundle.label
 nowcast_pm25 = None
 nowcast_time_str = "Không xác định"
 
@@ -121,24 +117,25 @@ if nowcast_model is not None and len(df) >= 2:
     
     matching_rows = df[df['date'] == prev_hour_tz]
     if not matching_rows.empty:
-        nowcast_features = matching_rows[FEATURES].copy()
+        nowcast_base_row = matching_rows.iloc[[-1]].copy()
     else:
-        nowcast_features = df.iloc[[-1]][FEATURES].copy()
+        nowcast_base_row = df.iloc[[-1]].copy()
         current_hour_tz = df.iloc[-1]['date'] + pd.Timedelta(hours=1)
-        
-    current_hour_naive = current_hour_tz.tz_localize(None)
-    
-    try:
-        forecast_df = fetch_weather_forecast()
-        current_weather = forecast_df[forecast_df['datetime'] == current_hour_naive]
-        if not current_weather.empty:
-            for col in WEATHER_FEATURES:
-                if col in current_weather.columns:
-                    nowcast_features[col] = current_weather.iloc[0][col]
-    except Exception:
-        pass
-        
-    nowcast_features = nowcast_features[FEATURES]
+
+    nowcast_features = build_feature_frame(df, nowcast_bundle.feature_columns, base_row=nowcast_base_row)
+    if nowcast_bundle.uses_future_weather_forecast:
+        current_hour_naive = current_hour_tz.tz_localize(None)
+        try:
+            forecast_df = fetch_weather_forecast()
+            current_weather = forecast_df[forecast_df['datetime'] == current_hour_naive]
+            if not current_weather.empty:
+                nowcast_features = apply_future_weather_if_allowed(
+                    nowcast_features,
+                    current_weather.iloc[0],
+                    nowcast_bundle.uses_future_weather_forecast,
+                )
+        except Exception:
+            pass
     
     nowcast_pm25 = nowcast_model.predict(nowcast_features)[0]
     nowcast_aqi = pm25_to_aqi(nowcast_pm25)
@@ -168,7 +165,7 @@ with col_nowcast:
             <h1 style="margin: 5px 0; font-size: 3.8rem; color: {nowcast_text_color};">{nowcast_aqi}</h1>
             <h2 style="margin: 0; font-weight: bold; color: {nowcast_text_color};">{nowcast_level}</h2>
             <p style="margin: 8px 0 0 0; font-size: 1.15rem;">PM2.5: <b>{nowcast_pm25:.1f} µg/m³</b> ({nowcast_time_str})</p>
-            <p style="margin: 5px 0 0 0; font-size: 1rem; color: inherit;">Ước lượng bù đắp độ trễ bằng XGBoost</p>
+            <p style="margin: 5px 0 0 0; font-size: 1rem; color: inherit;">Ước lượng bằng {nowcast_type}</p>
         </div>
         """, unsafe_allow_html=True)
     else:
@@ -184,34 +181,32 @@ if nowcast_model is not None and 'pm2_5_missing_flag' in df.columns:
     
     if len(valid_df) > 1:
         # Tính toán input features t-1
-        eval_features = valid_df[FEATURES].shift(1).copy()
-        
-        # Weather features của t (chính là dòng hiện tại trong valid_df)
-        for col in WEATHER_FEATURES:
-            eval_features[col] = valid_df[col]
-            
-        eval_features = eval_features[FEATURES]
-        
-        # Loại bỏ dòng đầu tiên (do bị shift nên NaN)
-        valid_df = valid_df.iloc[1:].copy()
-        eval_features = eval_features.iloc[1:].copy()
-        
-        # Predict
-        preds = nowcast_model.predict(eval_features)
-        
-        # Build dataframe for charting
-        chart_index = valid_df['date'].dt.tz_localize(None)
-        chart_df = pd.DataFrame({
-            'Actual PM2.5 (Thực tế)': valid_df['pm2_5'].values,
-            'Predicted Nowcast (AI)': preds
-        }, index=chart_index)
-        
-        # Tính MAE
-        from sklearn.metrics import mean_absolute_error
-        mae = mean_absolute_error(chart_df['Actual PM2.5 (Thực tế)'], chart_df['Predicted Nowcast (AI)'])
-        
-        st.markdown(f"**Sai số trung bình (MAE) trong {len(chart_df)} giờ qua:** <b style='color: #d35400;'>{mae:.2f} µg/m³</b>", unsafe_allow_html=True)
-        st.line_chart(chart_df)
+        if all(col in valid_df.columns for col in nowcast_bundle.feature_columns):
+            eval_features = valid_df[nowcast_bundle.feature_columns].shift(1).copy()
+
+            if nowcast_bundle.uses_future_weather_forecast:
+                for col in WEATHER_FEATURES:
+                    if col in eval_features.columns:
+                        eval_features[col] = valid_df[col]
+
+            valid_df = valid_df.iloc[1:].copy()
+            eval_features = eval_features.iloc[1:].copy()
+
+            preds = nowcast_model.predict(eval_features)
+
+            chart_index = valid_df['date'].dt.tz_localize(None)
+            chart_df = pd.DataFrame({
+                'Actual PM2.5 (Thực tế)': valid_df['pm2_5'].values,
+                'Predicted Nowcast (AI)': preds
+            }, index=chart_index)
+
+            from sklearn.metrics import mean_absolute_error
+            mae = mean_absolute_error(chart_df['Actual PM2.5 (Thực tế)'], chart_df['Predicted Nowcast (AI)'])
+
+            st.markdown(f"**Sai số trung bình (MAE) trong {len(chart_df)} giờ qua:** <b style='color: #d35400;'>{mae:.2f} µg/m³</b>", unsafe_allow_html=True)
+            st.line_chart(chart_df)
+        else:
+            st.info("Nowcast validation chỉ hiển thị cho champion dùng feature table trực tiếp.")
         
 st.markdown("---")
 
@@ -242,15 +237,19 @@ else:
 
 col3.metric("Bụi mịn PM2.5", f"{latest_pm25:.1f} µg/m³")
 
-# Kiểm tra sự hiện diện của các mô hình
-model_status = "Sẵn sàng (3 Horizons)" if os.path.exists("models/xgb_t24.json") else "Chưa huấn luyện"
+if os.path.exists(DEFAULT_MANIFEST_PATH):
+    model_status = "Champion registry"
+elif os.path.exists("models/xgb_t24.json"):
+    model_status = "Legacy XGBoost"
+else:
+    model_status = "Chưa huấn luyện"
 col4.metric("Hệ Thống Trí Tuệ Nhân Tạo (AI)", model_status)
 
 st.markdown("---")
 
 # ─── 5. MULTI-HORIZON FORECAST ENGINE (AI DỰ BÁO) ───
 st.subheader("Trạm Dự Báo Tương Lai (AI Forecast Engine)")
-st.caption("Chọn horizon để nạp mô hình XGBoost/SARIMA tương ứng và dự báo nồng độ bụi mịn PM2.5 cho các mốc thời gian sắp tới.")
+st.caption("Chọn horizon để nạp champion model; nếu chưa export champion thì tự fallback sang mô hình legacy.")
 
 horizon_choice = st.radio(
     "Lựa chọn khoảng thời gian dự báo (tính từ hiện tại):",
@@ -263,31 +262,32 @@ horizon_choice = st.radio(
     horizontal=True
 )
 
-model, model_type = load_horizon_model(horizon_choice)
+model_bundle = load_horizon_model(horizon_choice)
+model = model_bundle.model
+model_type = model_bundle.label
 
 if model is not None:
-    # Lấy dòng mới nhất có đầy đủ features để suy diễn
-    last_features = df.iloc[[-1]][FEATURES].copy()
+    last_features = build_feature_frame(df, model_bundle.feature_columns)
     
     # Tính thời điểm dự kiến xảy ra
     target_time = df['date'].iloc[-1] + pd.Timedelta(hours=horizon_choice)
     target_time_naive = target_time.tz_localize(None)
     
-    try:
-        forecast_df = fetch_weather_forecast()
-        future_weather = forecast_df[forecast_df['datetime'] == target_time_naive]
-        
-        if not future_weather.empty:
-            for col in WEATHER_FEATURES:
-                if col in future_weather.columns:
-                    last_features[col] = future_weather.iloc[0][col]
-        else:
-            st.warning(f"Không tìm thấy dự báo thời tiết cho thời điểm {target_time.strftime('%d-%m-%Y %H:%M')}. Dùng giá trị hiện tại làm fallback.")
-    except Exception as e:
-        st.warning(f"Lỗi khi lấy dự báo thời tiết Open-Meteo ({e}). Dùng giá trị hiện tại làm fallback.")
-        
-    # Sắp xếp lại thứ tự cột cho đúng với lúc train
-    last_features = last_features[FEATURES]
+    if model_bundle.uses_future_weather_forecast:
+        try:
+            forecast_df = fetch_weather_forecast()
+            future_weather = forecast_df[forecast_df['datetime'] == target_time_naive]
+
+            if not future_weather.empty:
+                last_features = apply_future_weather_if_allowed(
+                    last_features,
+                    future_weather.iloc[0],
+                    model_bundle.uses_future_weather_forecast,
+                )
+            else:
+                st.warning(f"Không tìm thấy dự báo thời tiết cho thời điểm {target_time.strftime('%d-%m-%Y %H:%M')}. Dùng giá trị hiện tại làm fallback.")
+        except Exception as e:
+            st.warning(f"Lỗi khi lấy dự báo thời tiết Open-Meteo ({e}). Dùng giá trị hiện tại làm fallback.")
 
     pm25_pred = model.predict(last_features)[0]
     
@@ -317,7 +317,7 @@ if model is not None:
     </div>
     """, unsafe_allow_html=True)
 else:
-    st.warning(f"Không tìm thấy file mô hình tại models/xgb_t{horizon_choice}.json hoặc sarima_t{horizon_choice}.pkl. Vui lòng chạy huấn luyện trước.")
+    st.warning(f"Không tìm thấy champion hoặc legacy model cho horizon t+{horizon_choice}h. Vui lòng chạy benchmark/export champion trước.")
 
 st.markdown("---")
 
@@ -369,9 +369,9 @@ with colA:
         st.info("Chưa sinh biểu đồ Permutation Importance.")
 
 with colB:
-    st.markdown(f"##### Ma Trận Nhầm Lẫn (Confusion Matrix - Horizon t+{horizon_choice}h)")
+    st.markdown(f"##### Ma Trận Nhầm Lẫn Legacy XGBoost (Horizon t+{horizon_choice}h)")
     cm_path = os.path.join(FIGURES_DIR, f"cm_xgboost_t{horizon_choice}h.png")
     if os.path.exists(cm_path):
-        st.image(cm_path, use_column_width=True, caption=f"Confusion Matrix phân loại AQI ở Horizon t+{horizon_choice}h.")
+        st.image(cm_path, use_column_width=True, caption=f"Confusion Matrix legacy XGBoost ở Horizon t+{horizon_choice}h.")
     else:
         st.info(f"Chưa có Confusion Matrix cho Horizon t+{horizon_choice}h. Vui lòng chạy đánh giá.")

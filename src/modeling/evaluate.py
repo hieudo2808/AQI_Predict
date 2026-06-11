@@ -3,13 +3,12 @@ Module đánh giá hiệu năng mô hình dự báo PM2.5 theo 5 kịch bản ba
 và trực quan hóa confusion matrix 6x6.
 """
 import os
-import logging
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import mean_absolute_error, mean_squared_error, f1_score, confusion_matrix
-from src.config import TARGET, FIGURES_DIR
+from src.config import FIGURES_DIR
 from src.aqi_formula import pm25_to_aqi, aqi_to_level
 from src.utils.logger import get_logger
 

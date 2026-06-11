@@ -4,7 +4,7 @@ Module tiền xử lý dữ liệu: xử lý missing values và loại bỏ outl
 import logging
 import numpy as np
 import pandas as pd
-from src.config import OUTLIER_N_SIGMA, TARGET
+from src.config import TARGET
 
 logger = logging.getLogger(__name__)
 
@@ -111,4 +111,3 @@ def preprocess(df: pd.DataFrame) -> pd.DataFrame:
 
     logger.info("Hoàn tất tiền xử lý và nội suy chuỗi thời gian")
     return df
-
