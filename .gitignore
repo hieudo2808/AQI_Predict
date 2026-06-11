@@ -189,3 +189,6 @@ data/raw/crawl_log.json
 models/*.json
 models/*.pkl
 models/*.joblib
+models/model_selection/
+models/champions/*.joblib
+catboost_info/

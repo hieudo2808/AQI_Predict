@@ -1,0 +1,13 @@
+# Optional modeling/selection stack.
+# Keep this separate from requirements.txt so the Streamlit app stays lightweight.
+-r requirements.txt
+
+# Additional tabular challengers
+catboost
+tabpfn
+
+# Sequential/deep time-series modeling stack
+torch
+# Modern NeuralForecast is required for DLinear/NLinear/NHITS/NBEATSx/TFT/PatchTST.
+# Python 3.14 currently lacks compatible Ray/Torch constraints for NeuralForecast 3.x.
+neuralforecast>=3.1.0; python_version < "3.14"
