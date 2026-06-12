@@ -33,10 +33,12 @@ from src.modeling.model_specs import (
     neuralforecast_model_names as _neuralforecast_model_names,
     preflight_environment,
     safe_model_name as _safe_name,
+    statistical_specs as _statistical_specs,
     tabular_specs as _tabular_specs,
     window_sequence_specs as _window_sequence_specs,
 )
 from src.modeling.train import prepare_data, rolling_mean_baseline, shifted_baseline
+from src.modeling.tuning import tune_model as _tune_model
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -267,16 +269,30 @@ def _baseline_results(data: dict) -> list[dict]:
     return rows
 
 
-def _fit_predict_tabular(data: dict, spec: ModelSpec) -> tuple[np.ndarray, float, object]:
+def _fit_predict_tabular(
+    data: dict, spec: ModelSpec, tune: bool = False
+) -> tuple[np.ndarray, float, object, dict, bool]:
     X_train = data["X_train"]
     y_train = data["y_train"]
 
-    model = spec.factory()
     start = time.perf_counter()
-    model.fit(X_train, y_train)
+    if tune:
+        # Tune bằng TimeSeriesSplit CV trên Train(+Valid). best_estimator_ refit luôn
+        # trên toàn bộ dữ liệu tune -> tham số là kết quả CV, không phải chọn cứng.
+        if data.get("X_valid") is not None and len(data["X_valid"]) > 0:
+            X_tune = pd.concat([X_train, data["X_valid"]])
+            y_tune = pd.concat([y_train, data["y_valid"]])
+        else:
+            X_tune, y_tune = X_train, y_train
+        model, best_params, tuned = _tune_model(spec, X_tune, y_tune)
+    else:
+        model = spec.factory()
+        model.fit(X_train, y_train)
+        best_params, tuned = {}, False
+
     pred = model.predict(data["X_test"])
     runtime = time.perf_counter() - start
-    return np.asarray(pred, dtype=float), runtime, model
+    return np.asarray(pred, dtype=float), runtime, model, best_params, tuned
 
 
 def _fit_full_tabular_model(df: pd.DataFrame, horizon: int, mode: str, spec: ModelSpec):
@@ -320,19 +336,43 @@ def _window_data(data: dict, lookback: int = 168) -> dict | None:
     }
 
 
-def _run_specs(data: dict, specs: list[ModelSpec], save_models: bool, mode: str, horizon: int) -> list[dict]:
+def _fit_predict_statistical(data: dict, spec: ModelSpec) -> tuple[np.ndarray, float, object]:
+    """Fit SARIMAX trên Train+Valid rồi forecast khối Test liền kề.
+
+    SARIMAX.forecast() nối tiếp từ điểm cuối dữ liệu huấn luyện, nên phải fit trên
+    Train+Valid để dự báo căn đúng vào tập Test (Test là phần đuôi liền sau Valid).
+    """
+    X_fit = pd.concat([data["X_train"], data["X_valid"]])
+    y_fit = pd.concat([data["y_train"], data["y_valid"]])
+
+    model = spec.factory()
+    start = time.perf_counter()
+    model.fit(X_fit, y_fit)
+    pred = np.asarray(model.predict(data["X_test"]), dtype=float)
+    runtime = time.perf_counter() - start
+    return pred, runtime, model
+
+
+def _run_specs(
+    data: dict, specs: list[ModelSpec], save_models: bool, mode: str, horizon: int, tune: bool = False
+) -> list[dict]:
     rows = []
     for spec in specs:
         try:
-            if spec.group == "sequential_window":
+            best_params: dict = {}
+            tuned = False
+            if spec.group == "statistical":
+                pred, runtime, model = _fit_predict_statistical(data, spec)
+                y_true = data["y_test"].to_numpy()
+            elif spec.group == "sequential_window":
                 seq = _window_data(data)
                 if seq is None:
                     rows.append(_error_row(spec, "not enough sequence rows"))
                     continue
-                pred, runtime, model = _fit_predict_tabular(seq, spec)
+                pred, runtime, model, best_params, tuned = _fit_predict_tabular(seq, spec, tune=tune)
                 y_true = seq["y_test"].to_numpy()
             else:
-                pred, runtime, model = _fit_predict_tabular(data, spec)
+                pred, runtime, model, best_params, tuned = _fit_predict_tabular(data, spec, tune=tune)
                 y_true = data["y_test"].to_numpy()
 
             metrics = _regression_metrics(y_true, pred)
@@ -344,6 +384,8 @@ def _run_specs(data: dict, specs: list[ModelSpec], save_models: bool, mode: str,
                     "runtime_seconds": round(float(runtime), 4),
                     "status": "ok",
                     "error": "",
+                    "tuned": tuned,
+                    "best_params": json.dumps(best_params, ensure_ascii=False) if best_params else "",
                     **metrics,
                 }
             )
@@ -363,6 +405,8 @@ def _error_row(spec: ModelSpec, error: str) -> dict:
         "runtime_seconds": 0.0,
         "status": "error",
         "error": error[:500],
+        "tuned": False,
+        "best_params": "",
         "MAE": np.nan,
         "RMSE": np.nan,
         "R2": np.nan,
@@ -381,6 +425,8 @@ def run_benchmark(
     include_tabpfn: bool = True,
     save_models: bool = False,
     run_neuralforecast: bool = False,
+    tune: bool = False,
+    include_sarimax: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     df = pd.read_parquet(FEATURES_PATH)
     h_list = horizons or HORIZONS
@@ -389,10 +435,16 @@ def run_benchmark(
         include_tabpfn=include_tabpfn and not quick,
     )
     sequence_specs = _window_sequence_specs()
+    if include_sarimax:
+        stat_specs, stat_skipped = _statistical_specs(include_optional=include_optional)
+        skipped.extend(stat_skipped)
+    else:
+        stat_specs = []
     if quick:
         keep = {"Ridge", "RandomForest", "WindowRidge_168h"}
         tabular_specs = [spec for spec in tabular_specs if spec.name in keep]
         sequence_specs = [spec for spec in sequence_specs if spec.name in keep]
+        stat_specs = []
 
     rows = []
     for horizon in h_list:
@@ -407,7 +459,8 @@ def run_benchmark(
         for result in _baseline_results(data):
             rows.append({"mode": mode, "horizon": horizon, "status": "ok", "error": "", **result})
 
-        for result in _run_specs(data, tabular_specs + sequence_specs, save_models, mode, horizon):
+        all_specs = stat_specs + tabular_specs + sequence_specs
+        for result in _run_specs(data, all_specs, save_models, mode, horizon, tune=tune):
             rows.append({"mode": mode, "horizon": horizon, **result})
 
     if run_neuralforecast and not quick:
@@ -538,9 +591,51 @@ def export_champions(metrics: pd.DataFrame, include_optional: bool, include_tabp
     return manifest
 
 
+def write_combined_leaderboard(metrics: pd.DataFrame) -> None:
+    """Một bảng tổng hợp DUY NHẤT cho mỗi horizon (mode operational).
+
+    Gộp toàn bộ: Baseline (Naive/Rolling/SeasonalNaive) → SARIMAX (thống kê) →
+    ML tuyến tính/cây/boosting → Window/Deep. Sắp theo complexity_rank rồi MAE để
+    người đọc thấy mô hình càng cải tiến thì hiệu năng càng tăng.
+    """
+    ok = metrics[metrics["status"].eq("ok") & metrics["mode"].eq("operational")].copy()
+    if ok.empty:
+        return
+    if "tuned" not in ok.columns:
+        ok["tuned"] = False
+    ok["tuned"] = ok["tuned"].fillna(False)
+
+    group_order = {
+        "corrected_baseline": 0,
+        "statistical": 1,
+        "tabular_linear": 2,
+        "tabular_tree": 3,
+        "tabular_boosting": 4,
+        "tabular_foundation": 5,
+        "sequential_window": 6,
+        "neuralforecast": 7,
+    }
+    ok["_g"] = ok["group"].map(group_order).fillna(99)
+    ok = ok.sort_values(["horizon", "_g", "MAE"])
+
+    sections = [
+        "# Bảng Tổng Hợp So Sánh Toàn Bộ Mô Hình (Operational)\n",
+        "Sắp xếp theo nhóm độ phức tạp tăng dần (Baseline → Thống kê → ML → Chuỗi/Deep), "
+        "trong mỗi nhóm xếp theo MAE. Cột `tuned` cho biết tham số có qua TimeSeriesSplit CV hay không.\n",
+    ]
+    cols = ["group", "model", "tuned", "MAE", "RMSE", "R2", "recall_unhealthy_plus", "mae_top5", "runtime_seconds"]
+    for horizon in sorted(ok["horizon"].unique()):
+        block = ok[ok["horizon"].eq(horizon)]
+        sections.append(f"## Horizon t+{int(horizon)}h\n")
+        sections.append(_md_table(block, cols) + "\n")
+
+    (REPORT_DIR / "combined_leaderboard.md").write_text("\n".join(sections), encoding="utf-8")
+
+
 def write_outputs(metrics: pd.DataFrame, skipped: pd.DataFrame, export_manifest: dict | None = None) -> None:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     metrics.to_csv(REPORT_DIR / "metrics.csv", index=False, encoding="utf-8")
+    write_combined_leaderboard(metrics)
     metrics[["mode", "horizon", "model", "group", "runtime_seconds", "status", "error"]].to_csv(
         REPORT_DIR / "runtime.csv", index=False, encoding="utf-8"
     )
@@ -628,6 +723,8 @@ def main() -> None:
         help="Persist fitted non-baseline models under models/model_selection.",
     )
     parser.add_argument("--run-neuralforecast", action="store_true", help="Run NeuralForecast models if installed.")
+    parser.add_argument("--tune", action="store_true", help="Tune hyperparameters via TimeSeriesSplit CV on Train+Valid instead of fixed configs.")
+    parser.add_argument("--no-sarimax", action="store_true", help="Skip the SARIMAX statistical baseline.")
     parser.add_argument("--export-champions", action="store_true", help="Export operational champion artifacts and manifest.")
     parser.add_argument("--preflight", action="store_true", help="Print optional dependency and hardware preflight JSON, then exit.")
     args = parser.parse_args()
@@ -648,6 +745,8 @@ def main() -> None:
             include_tabpfn=not args.skip_tabpfn,
             save_models=args.save_models,
             run_neuralforecast=args.run_neuralforecast,
+            tune=args.tune,
+            include_sarimax=not args.no_sarimax,
         )
         all_metrics.append(metrics)
         all_skipped.append(skipped.assign(mode=mode) if not skipped.empty else skipped)
