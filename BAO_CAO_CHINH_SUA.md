@@ -22,27 +22,27 @@ Tài liệu này tổng hợp chi tiết các nội dung đã được chỉnh s
 
 | Nhóm mô hình | Tên mô hình | Có Tuning (CV) | MAE (µg/m³) | RMSE (µg/m³) | $R^2$ | Thời gian huấn luyện (s) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Baseline cơ sở** | Naive Persistence | Không | 6.2722 | 11.3774 | 0.8770 | 0.0000 |
-| **Baseline thống kê** | **SARIMAX** | Không | **6.1203** | **10.8316** | **0.8885** | **41.6666** |
-| **Học máy Tuyến tính** | Ridge | Có | 6.0886 | 10.7650 | 0.8899 | 5.7164 |
-| **Học máy Tuyến tính** | ElasticNet | Có | 6.0997 | 10.7776 | 0.8896 | 2.0779 |
-| **Học máy dạng Cây** | ExtraTrees | Không | 6.1799 | 10.8432 | 0.8883 | 1.4234 |
-| **Học máy dạng Cây** | RandomForest | Không | 6.1905 | 11.1136 | 0.8826 | 6.3649 |
-| **Học máy Boosting** | XGBoost | Có | 6.1270 | 10.7684 | 0.8898 | 60.6377 |
-| **Học máy Boosting** | LightGBM | Có | 6.1421 | 10.8460 | 0.8882 | 48.4792 |
-| **Học máy Chuỗi (Window)**| WindowRidge_168h | Có | 9.9610 | 16.4975 | 0.7414 | 0.5982 |
+| **Baseline cơ sở** | Naive Persistence | Không | 6.2568 | 11.3591 | 0.8782 | 0.0000 |
+| **Baseline thống kê** | **SARIMAX** | Không | **6.0606** | **10.7524** | **0.8909** | **27.5435** |
+| **Học máy Tuyến tính** | ElasticNet | Có | 6.0196 | 10.7178 | 0.8916 | 5.0581 |
+| **Học máy Tuyến tính** | Ridge | Có | 6.0777 | 10.7241 | 0.8914 | 3.0190 |
+| **Học máy dạng Cây** | ExtraTrees | Không | 6.1600 | 10.8225 | 0.8894 | 0.9074 |
+| **Học máy dạng Cây** | RandomForest | Không | 6.1782 | 11.0616 | 0.8845 | 4.0603 |
+| **Học máy Boosting** | XGBoost | Có | 6.1779 | 10.7974 | 0.8899 | 33.2396 |
+| **Học máy Boosting** | LightGBM | Có | 6.1807 | 10.8943 | 0.8880 | 43.2722 |
+| **Học máy Chuỗi (Window)**| WindowRidge_168h | Có | 9.9509 | 16.4666 | 0.7440 | 0.5983 |
 
 ### Horizon t+24h (Dự báo trước 24 giờ)
 
 | Nhóm mô hình | Tên mô hình | Có Tuning (CV) | MAE (µg/m³) | RMSE (µg/m³) | $R^2$ | Thời gian huấn luyện (s) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Baseline cơ sở** | Naive Persistence | Không | 20.9453 | 31.5912 | 0.0533 | 0.0000 |
-| **Baseline thống kê** | **SARIMAX** | Không | **19.4028** | **28.6571** | **0.2210** | **27.6137** |
-| **Học máy Tuyến tính** | ElasticNet | Có | 18.6681 | 27.7680 | 0.2686 | 1.9551 |
-| **Học máy Boosting** | LightGBM | Có | 19.0634 | 28.7958 | 0.2134 | 44.4685 |
-| **Học máy dạng Cây** | RandomForest | Không | 19.1239 | 28.6921 | 0.2191 | 6.5508 |
-| **Học máy Chuỗi (Window)**| WindowRidge_168h | Có | 19.2181 | 27.1357 | 0.3015 | 0.5351 |
-| **Học máy Boosting** | XGBoost | Có | 19.2631 | 29.0138 | 0.2015 | 63.6344 |
+| **Baseline cơ sở** | Naive Persistence | Không | 20.9493 | 31.5798 | 0.0590 | 0.0000 |
+| **Baseline thống kê** | **SARIMAX** | Không | **19.2904** | **28.9105** | **0.2114** | **23.8199** |
+| **Học máy Tuyến tính** | ElasticNet | Có | 18.9246 | 28.2343 | 0.2478 | 5.3980 |
+| **Học máy dạng Cây** | RandomForest | Không | 19.0650 | 28.7758 | 0.2187 | 4.0648 |
+| **Học máy Boosting** | XGBoost | Có | 19.1403 | 28.9527 | 0.2091 | 30.8022 |
+| **Học máy Boosting** | LightGBM | Có | 19.1498 | 28.9073 | 0.2115 | 30.5187 |
+| **Học máy Chuỗi (Window)**| WindowRidge_168h | Có | 19.2749 | 27.1485 | 0.3046 | 0.5971 |
 
 ---
 

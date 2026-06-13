@@ -25,31 +25,32 @@ from src.config import CV_N_SPLITS, RANDOM_SEED
 # Pipeline make_pipeline(StandardScaler(), Ridge()) đặt tên bước là 'ridge', 'elasticnet'.
 TUNING_GRIDS: dict[str, dict[str, list]] = {
     "Ridge": {
-        "ridge__alpha": [0.1, 1.0, 10.0, 30.0, 100.0],
+        "ridge__alpha": [0.01, 0.1, 1.0, 5.0, 10.0, 20.0, 30.0, 50.0, 100.0, 200.0],
     },
     "ElasticNet": {
-        "elasticnet__alpha": [0.001, 0.01, 0.1, 1.0],
-        "elasticnet__l1_ratio": [0.1, 0.2, 0.5, 0.8],
+        "elasticnet__alpha": [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 30.0],
+        "elasticnet__l1_ratio": [0.05, 0.1, 0.2, 0.5, 0.7, 0.9, 0.95],
     },
     # RandomForest / ExtraTrees cố tình KHÔNG tune (mỗi fit ~3.5s trên 8700 dòng,
     # rất chậm). Chúng vẫn chạy với tham số mặc định để có mặt trong leaderboard.
     "XGBoost": {
-        "n_estimators": [300, 500, 800],
-        "max_depth": [4, 6, 8],
-        "learning_rate": [0.01, 0.03, 0.1],
-        "subsample": [0.7, 0.8, 1.0],
-        "colsample_bytree": [0.7, 0.8, 1.0],
+        "n_estimators": [100, 300, 500, 800],
+        "max_depth": [3, 4, 5, 6, 7, 8],
+        "learning_rate": [0.01, 0.03, 0.05, 0.1, 0.15],
+        "subsample": [0.6, 0.7, 0.8, 0.9, 1.0],
+        "colsample_bytree": [0.6, 0.7, 0.8, 0.9, 1.0],
     },
     "LightGBM": {
-        "n_estimators": [300, 500, 800],
-        "max_depth": [4, 6, 8, -1],
-        "learning_rate": [0.01, 0.03, 0.1],
-        "num_leaves": [31, 63, 127],
-        "subsample": [0.7, 0.8, 1.0],
+        "n_estimators": [100, 300, 500, 800],
+        "max_depth": [3, 4, 5, 6, 7, 8, -1],
+        "learning_rate": [0.01, 0.03, 0.05, 0.1, 0.15],
+        "num_leaves": [15, 31, 63, 127],
+        "subsample": [0.6, 0.7, 0.8, 0.9, 1.0],
+        "colsample_bytree": [0.6, 0.7, 0.8, 0.9, 1.0],
     },
     # Window models: tune độ co giãn của Ridge ở đầu pipeline.
     "WindowRidge_168h": {
-        "ridge__alpha": [0.1, 1.0, 10.0, 30.0, 100.0],
+        "ridge__alpha": [0.01, 0.1, 1.0, 5.0, 10.0, 20.0, 30.0, 50.0, 100.0, 200.0],
     },
 }
 
@@ -66,7 +67,7 @@ def tune_model(
     X,
     y,
     n_splits: int | None = None,
-    n_iter: int = 8,
+    n_iter: int = 16,
     seed: int = RANDOM_SEED,
 ) -> tuple[Any, dict, bool]:
     """
@@ -111,3 +112,4 @@ def tune_model(
     )
     search.fit(X, y)
     return search.best_estimator_, dict(search.best_params_), True
+

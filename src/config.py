@@ -96,6 +96,12 @@ HISTORICAL_FEATURES = [
     # Trend features
     'pm2_5_diff_1h',
     'pm2_5_diff_24h',
+
+    # Seasonal & Ratio features (built in build_features.py)
+    'is_winter',
+    'is_summer',
+    'season',
+    'pm25_pm10_ratio',
 ]
 
 WEATHER_FEATURES = [
