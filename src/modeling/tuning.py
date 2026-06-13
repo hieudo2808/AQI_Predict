@@ -31,16 +31,8 @@ TUNING_GRIDS: dict[str, dict[str, list]] = {
         "elasticnet__alpha": [0.001, 0.01, 0.1, 1.0],
         "elasticnet__l1_ratio": [0.1, 0.2, 0.5, 0.8],
     },
-    "RandomForest": {
-        "n_estimators": [200, 300, 500],
-        "max_depth": [8, 12, 16, None],
-        "min_samples_leaf": [1, 2, 4],
-    },
-    "ExtraTrees": {
-        "n_estimators": [200, 300, 500],
-        "max_depth": [8, 12, 16, None],
-        "min_samples_leaf": [1, 2, 4],
-    },
+    # RandomForest / ExtraTrees cố tình KHÔNG tune (mỗi fit ~3.5s trên 8700 dòng,
+    # rất chậm). Chúng vẫn chạy với tham số mặc định để có mặt trong leaderboard.
     "XGBoost": {
         "n_estimators": [300, 500, 800],
         "max_depth": [4, 6, 8],
@@ -74,7 +66,7 @@ def tune_model(
     X,
     y,
     n_splits: int | None = None,
-    n_iter: int = 20,
+    n_iter: int = 8,
     seed: int = RANDOM_SEED,
 ) -> tuple[Any, dict, bool]:
     """

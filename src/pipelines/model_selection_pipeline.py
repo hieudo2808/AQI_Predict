@@ -548,23 +548,22 @@ def export_champions(metrics: pd.DataFrame, include_optional: bool, include_tabp
         horizon = int(row["horizon"])
         model_name = row["model"]
         spec = specs.get(model_name)
-        if spec is None or spec.group == "corrected_baseline":
+        # Chỉ các nhóm tabular mới deploy được qua feature-frame của dashboard.
+        # Nếu champion là baseline / SARIMAX / window (spec None hoặc nhóm khác),
+        # lùi về mô hình tabular tốt nhất cùng horizon để export.
+        deployable = {"tabular_linear", "tabular_tree", "tabular_boosting", "tabular_foundation"}
+        if spec is None or spec.group not in deployable:
             candidates = metrics[
                 metrics["mode"].eq("operational")
                 & metrics["horizon"].eq(horizon)
                 & metrics["status"].eq("ok")
-                & metrics["group"].isin(["tabular_linear", "tabular_tree", "tabular_boosting", "tabular_foundation"])
+                & metrics["group"].isin(list(deployable))
             ].sort_values(["rank_mae", "complexity_rank", "runtime_seconds"])
             if candidates.empty:
                 raise RuntimeError(f"Không có deployment-capable champion cho horizon {horizon}")
             row = candidates.iloc[0]
             model_name = row["model"]
             spec = specs[model_name]
-
-        if spec.group == "sequential_window":
-            raise RuntimeError(
-                f"Champion {model_name} cho horizon {horizon} dùng sequential_window chưa hỗ trợ deployment export."
-            )
 
         model, feature_columns, train_rows = _fit_full_tabular_model(df, horizon, "operational", spec)
         artifact_rel = Path("models") / "champions" / f"t{horizon}_{_safe_name(model_name)}.joblib"

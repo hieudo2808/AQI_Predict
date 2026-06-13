@@ -1,12 +1,6 @@
 {
-<<<<<<< HEAD
-    "generated_at": "2026-06-04T23:44:36.086116",
-    "raw_data_max_time": "2026-06-04T20:00:00",
-    "feature_data_max_time": "2026-06-04T20:00:00",
-=======
-    "generated_at": "2026-06-02T22:36:57.727825",
-    "raw_data_max_time": "2026-06-02T09:00:00",
-    "feature_data_max_time": "2026-06-02T09:00:00",
->>>>>>> c04693d9de199b76d9c111a91612fbfb68956d53
+    "generated_at": "2026-06-12T23:31:17.526365",
+    "raw_data_max_time": "2026-06-12T22:00:00",
+    "feature_data_max_time": "2026-06-12T22:00:00",
     "feature_version": "v2"
 }
