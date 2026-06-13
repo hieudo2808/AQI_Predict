@@ -10,7 +10,7 @@ FIGURES_DIR = 'reports/figures'
 LATITUDE = 21.0285
 LONGITUDE = 105.8542
 TIMEZONE = "Asia/Ho_Chi_Minh"
-PURPLEAIR_SENSOR_INDEX = 96713 # Trạm AQSEA_VN_006 - Thanh Xuân Hà Nội
+PURPLEAIR_SENSOR_INDEX = 206623 # Trạm Field - Tây Hồ Hà Nội
 
 # ─── Seed & plotting ───
 RANDOM_SEED = 42

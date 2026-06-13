@@ -6,8 +6,8 @@
   "primary_mode": "operational",
   "oracle_weather_note": "oracle_weather uses actual future weather as Perfect Prognosis upper-bound, not primary leaderboard evidence.",
   "preflight": {
-    "python": "3.12.4 (tags/v3.12.4:8e8a4ba, Jun  6 2024, 19:30:16) [MSC v.1940 64 bit (AMD64)]",
-    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+    "platform": "Windows-10-10.0.22631-SP0",
     "modules": {
       "catboost": {
         "available": false,
@@ -19,7 +19,7 @@
       },
       "torch": {
         "available": true,
-        "version": "2.9.1+cpu"
+        "version": "2.5.1+cu121"
       },
       "neuralforecast": {
         "available": false,
@@ -27,22 +27,22 @@
       }
     },
     "torch": {
-      "cuda_available": false,
-      "device_count": 0
+      "cuda_available": true,
+      "device_count": 1
     }
   },
   "tabpfn_training": "uses the full eligible training window; no benchmark row cap or estimator cap is applied by this project; ignore_pretraining_limits=True is set so TabPFN can attempt datasets above its official 10,000-sample guidance",
   "champion_manifest": {
     "version": 1,
-    "created_at": "2026-06-13T08:47:34.184733+07:00",
+    "created_at": "2026-06-13T19:59:41.727232+07:00",
     "target": "pm2_5",
     "forecast_mode": "operational",
     "selection_rule": "lowest MAE; within 1%, simpler/faster wins",
     "champions": {
       "1": {
         "horizon": 1,
-        "model_name": "Ridge",
-        "artifact_path": "models/champions/t1_ridge.joblib",
+        "model_name": "ElasticNet",
+        "artifact_path": "models/champions/t1_elasticnet.joblib",
         "forecast_mode": "operational",
         "uses_future_weather_forecast": false,
         "feature_columns": [
@@ -78,19 +78,19 @@
           "precipitation"
         ],
         "target": "pm2_5",
-        "trained_at": "2026-06-13T08:47:34.204744+07:00",
-        "train_rows": 12496,
-        "MAE": 2.8321,
-        "RMSE": 4.2043,
-        "R2": 0.89889,
-        "recall_unhealthy_plus": 0.834933,
-        "mae_top5": 5.5394,
+        "trained_at": "2026-06-13T19:59:44.369378+07:00",
+        "train_rows": 10850,
+        "MAE": 6.0997,
+        "RMSE": 10.7776,
+        "R2": 0.889616,
+        "recall_unhealthy_plus": 0.943654,
+        "mae_top5": 13.7713,
         "selection_rule": "lowest MAE; within 1%, simpler/faster wins"
       },
       "24": {
         "horizon": 24,
-        "model_name": "Ridge",
-        "artifact_path": "models/champions/t24_ridge.joblib",
+        "model_name": "ElasticNet",
+        "artifact_path": "models/champions/t24_elasticnet.joblib",
         "forecast_mode": "operational",
         "uses_future_weather_forecast": false,
         "feature_columns": [
@@ -126,19 +126,19 @@
           "precipitation"
         ],
         "target": "pm2_5",
-        "trained_at": "2026-06-13T08:47:34.228253+07:00",
-        "train_rows": 12473,
-        "MAE": 8.772,
-        "RMSE": 11.4072,
-        "R2": 0.257059,
-        "recall_unhealthy_plus": 0.368522,
-        "mae_top5": 21.6993,
+        "trained_at": "2026-06-13T19:59:47.598950+07:00",
+        "train_rows": 10827,
+        "MAE": 18.6681,
+        "RMSE": 27.768,
+        "R2": 0.268573,
+        "recall_unhealthy_plus": 0.939358,
+        "mae_top5": 73.2287,
         "selection_rule": "lowest MAE; within 1%, simpler/faster wins"
       },
       "48": {
         "horizon": 48,
-        "model_name": "Ridge",
-        "artifact_path": "models/champions/t48_ridge.joblib",
+        "model_name": "ElasticNet",
+        "artifact_path": "models/champions/t48_elasticnet.joblib",
         "forecast_mode": "operational",
         "uses_future_weather_forecast": false,
         "feature_columns": [
@@ -174,19 +174,19 @@
           "precipitation"
         ],
         "target": "pm2_5",
-        "trained_at": "2026-06-13T08:47:34.251252+07:00",
-        "train_rows": 12449,
-        "MAE": 10.137,
-        "RMSE": 12.9524,
-        "R2": 0.044015,
-        "recall_unhealthy_plus": 0.228407,
-        "mae_top5": 24.8672,
+        "trained_at": "2026-06-13T19:59:50.755601+07:00",
+        "train_rows": 10803,
+        "MAE": 21.3178,
+        "RMSE": 30.581,
+        "R2": 0.112934,
+        "recall_unhealthy_plus": 0.954085,
+        "mae_top5": 86.7446,
         "selection_rule": "lowest MAE; within 1%, simpler/faster wins"
       },
       "72": {
         "horizon": 72,
-        "model_name": "XGBoost",
-        "artifact_path": "models/champions/t72_xgboost.joblib",
+        "model_name": "ElasticNet",
+        "artifact_path": "models/champions/t72_elasticnet.joblib",
         "forecast_mode": "operational",
         "uses_future_weather_forecast": false,
         "feature_columns": [
@@ -222,13 +222,13 @@
           "precipitation"
         ],
         "target": "pm2_5",
-        "trained_at": "2026-06-13T08:47:35.227376+07:00",
-        "train_rows": 12425,
-        "MAE": 10.6423,
-        "RMSE": 13.1213,
-        "R2": 0.020732,
-        "recall_unhealthy_plus": 0.216891,
-        "mae_top5": 25.419,
+        "trained_at": "2026-06-13T19:59:53.877598+07:00",
+        "train_rows": 10779,
+        "MAE": 23.2099,
+        "RMSE": 32.5713,
+        "R2": -0.004128,
+        "recall_unhealthy_plus": 0.965311,
+        "mae_top5": 89.2998,
         "selection_rule": "lowest MAE; within 1%, simpler/faster wins"
       }
     }
