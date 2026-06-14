@@ -111,7 +111,7 @@ def run_feature_pipeline():
     # 5. Build features
     from src.etl.build_features import build_all_features
     logger.info("Bắt đầu Build Features...")
-    df_features = build_all_features(df_clean)
+    df_features = build_all_features(df_clean, is_inference=True)
     logger.info(f"Đã sinh xong {len(df_features.columns)} features. Kích thước tập dữ liệu: {df_features.shape}")
     
     # 6. Save to features_targets.parquet

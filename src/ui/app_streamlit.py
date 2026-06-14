@@ -30,7 +30,7 @@ st.set_page_config(page_title="Hanoi AQI Live & Forecast Dashboard", layout="wid
 
 # ─── 1. HÀM LOAD DỮ LIỆU VÀ MÔ HÌNH ───
 @st.cache_data
-def load_data():
+def load_data(file_mtime):
     """Nạp dữ liệu từ Parquet features/targets sạch tần suất Hourly."""
     path = "data/features/features_targets.parquet"
     if not os.path.exists(path):
@@ -54,12 +54,18 @@ def load_data():
     df['date'] = pd.to_datetime(df['date'], utc=True).dt.tz_convert('Asia/Ho_Chi_Minh')
     return df
 
+# Lấy mốc thời gian sửa đổi file để tự động clear cache khi file thay đổi
+path_to_watch = "data/features/features_targets.parquet"
+if not os.path.exists(path_to_watch):
+    path_to_watch = "data/processed/aq_hourly_clean.parquet"
+file_mtime = os.path.getmtime(path_to_watch) if os.path.exists(path_to_watch) else 0
+
 @st.cache_resource
 def load_horizon_model(horizon):
     """Nạp champion model; fallback sang legacy XGBoost/SARIMA nếu chưa export champion."""
     return load_model_for_horizon(horizon)
 
-df = load_data()
+df = load_data(file_mtime)
 
 # ─── 2. HEADER DỰ ÁN ───
 st.title("Hệ Thống Live-Monitor & Dự Báo Ô Nhiễm PM2.5 Hà Nội")

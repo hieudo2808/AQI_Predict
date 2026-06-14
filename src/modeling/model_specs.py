@@ -173,6 +173,34 @@ def tabular_specs(include_optional: bool, include_tabpfn: bool = True) -> tuple[
     return specs, skipped
 
 
+def statistical_specs(include_optional: bool = True) -> tuple[list[ModelSpec], list[dict]]:
+    """Mô hình thống kê cổ điển làm baseline đối chiếu (SARIMAX).
+
+    SARIMAX dùng đúng bộ exog (FEATURES) như các mô hình ML để so sánh công bằng.
+    Trả về (specs, skipped) — skipped khi statsmodels chưa được cài.
+    """
+    specs: list[ModelSpec] = []
+    skipped: list[dict] = []
+
+    if module_available("statsmodels"):
+        from src.config import MODEL_CONFIGS
+        from src.modeling.wrappers import SARIMAXWrapper
+
+        specs.append(
+            ModelSpec(
+                "SARIMAX",
+                "statistical",
+                lambda: SARIMAXWrapper(**MODEL_CONFIGS["SARIMAX"]),
+                complexity_rank=1,
+                requires="statsmodels",
+            )
+        )
+    else:
+        skipped.append({"model": "SARIMAX", "reason": "statsmodels chưa được cài đặt"})
+
+    return specs, skipped
+
+
 def window_sequence_specs() -> list[ModelSpec]:
     return [
         ModelSpec(

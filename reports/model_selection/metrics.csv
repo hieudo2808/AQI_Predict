@@ -1,117 +1,55 @@
-mode,horizon,status,error,model,group,complexity_rank,runtime_seconds,MAE,RMSE,R2,recall_unhealthy_plus,mae_top5,threshold_95,n_test,rank_mae,selected_champion
-operational,1,ok,,RandomForest,tabular_tree,2,6.2758,3.4877,6.2633,0.910726,0.937815,10.689,75.9,4237,1.0,False
-operational,1,ok,,XGBoost,tabular_boosting,2,1.3066,3.5169,6.3496,0.908251,0.945098,10.7296,75.9,4237,2.0,True
-operational,1,ok,,LightGBM,tabular_boosting,2,1.6846,3.528,6.3882,0.907131,0.945658,11.0344,75.9,4237,3.0,False
-operational,1,ok,,ExtraTrees,tabular_tree,2,1.6313,3.556,6.3136,0.909286,0.944538,10.5465,75.9,4237,4.0,False
-operational,1,ok,,CatBoost,tabular_boosting,2,2.0492,3.5871,6.3236,0.909,0.94958,10.2448,75.9,4237,5.0,False
-operational,1,ok,,Persistence,corrected_baseline,0,0.0,3.5916,6.658,0.89912,0.92605,11.2803,75.9,4237,6.0,False
-operational,1,ok,,Ridge,tabular_linear,1,0.0175,3.6012,6.4848,0.904301,0.945658,10.5325,75.9,4237,7.0,False
-operational,1,ok,,ElasticNet,tabular_linear,1,2.9613,3.6367,6.5174,0.903335,0.95014,10.5306,75.9,4237,8.0,False
-operational,1,ok,,WindowRidge_168h,sequential_window,2,0.1881,5.6565,9.0333,0.814301,0.882913,17.9622,75.9,4237,9.0,False
-operational,1,ok,,WindowMLP_168h,sequential_window,3,6.988,6.0359,9.2752,0.804224,0.830812,18.1545,75.9,4237,10.0,False
-operational,1,ok,,RollingMean_24h,corrected_baseline,0,0.0,9.0338,12.8421,0.624697,0.782073,24.8668,75.9,4237,11.0,False
-operational,1,ok,,RollingMean_168h,corrected_baseline,0,0.0,12.4044,17.4522,0.30687,0.752381,41.1968,75.9,4237,12.0,False
-operational,1,ok,,SeasonalNaive_24h,corrected_baseline,0,0.0,12.6738,17.8456,0.275269,0.710924,32.893,75.9,4237,13.0,False
-operational,1,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,18.066,25.5472,-0.485249,0.660504,49.7103,75.9,4237,14.0,False
-operational,1,error,"Number of samples `14,829` in the input data is greater than the maximum number of samples `10,000` officially supported by TabPFN. Set `ignore_pretraining_limits=True` to override this error!",TabPFNRegressor_v2,tabular_foundation,3,0.0,,,,,,,0,,False
-operational,24,ok,,Ridge,tabular_linear,1,0.0189,11.2693,15.2216,0.47288,0.803361,29.8364,75.9,4233,1.0,True
-operational,24,ok,,ElasticNet,tabular_linear,1,4.4259,11.2972,15.2231,0.472782,0.807283,29.7349,75.9,4233,2.0,False
-operational,24,ok,,WindowRidge_168h,sequential_window,2,0.1397,11.475,15.913,0.423911,0.741737,38.4242,75.9,4233,3.0,False
-operational,24,ok,,CatBoost,tabular_boosting,2,2.4409,11.833,15.5245,0.451699,0.860504,25.8044,75.9,4233,4.0,False
-operational,24,ok,,RandomForest,tabular_tree,2,8.2846,11.9698,15.7659,0.434509,0.833613,24.9912,75.9,4233,5.0,False
-operational,24,ok,,ExtraTrees,tabular_tree,2,1.8921,12.0808,15.797,0.432281,0.853221,26.4031,75.9,4233,6.0,False
-operational,24,ok,,XGBoost,tabular_boosting,2,1.4252,12.0959,15.8961,0.425134,0.854902,23.7293,75.9,4233,7.0,False
-operational,24,ok,,LightGBM,tabular_boosting,2,0.9842,12.1718,16.1305,0.408051,0.862745,24.8348,75.9,4233,8.0,False
-operational,24,ok,,Persistence,corrected_baseline,0,0.0,12.6759,17.85,0.275125,0.710924,32.893,75.9,4233,9.0,False
-operational,24,ok,,SeasonalNaive_24h,corrected_baseline,0,0.0,12.6759,17.85,0.275125,0.710924,32.893,75.9,4233,9.0,False
-operational,24,ok,,RollingMean_24h,corrected_baseline,0,0.0,12.8142,17.5707,0.297634,0.692437,33.8234,75.9,4233,11.0,False
-operational,24,ok,,WindowMLP_168h,sequential_window,3,18.0503,13.4443,18.5649,0.215901,0.701961,36.6552,75.9,4233,12.0,False
-operational,24,ok,,RollingMean_168h,corrected_baseline,0,0.0,13.4829,18.7648,0.19892,0.731092,44.5916,75.9,4233,13.0,False
-operational,24,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,18.0438,25.5268,-0.482446,0.660504,49.7103,75.9,4233,14.0,False
-operational,24,error,"Number of samples `14,813` in the input data is greater than the maximum number of samples `10,000` officially supported by TabPFN. Set `ignore_pretraining_limits=True` to override this error!",TabPFNRegressor_v2,tabular_foundation,3,0.0,,,,,,,0,,False
-operational,48,ok,,Ridge,tabular_linear,1,0.0412,12.4674,16.5421,0.378075,0.758833,32.7248,75.9,4228,1.0,True
-operational,48,ok,,ElasticNet,tabular_linear,1,3.2966,12.5699,16.5836,0.374952,0.770611,31.8173,75.9,4228,2.0,False
-operational,48,ok,,WindowRidge_168h,sequential_window,2,0.0903,13.0419,17.8248,0.277887,0.722939,43.6728,75.9,4228,3.0,False
-operational,48,ok,,CatBoost,tabular_boosting,2,2.1771,13.6703,17.734,0.285228,0.844083,28.6388,75.9,4228,4.0,False
-operational,48,ok,,LightGBM,tabular_boosting,2,0.5805,14.0791,18.3469,0.234964,0.821649,29.0374,75.9,4228,5.0,False
-operational,48,ok,,ExtraTrees,tabular_tree,2,1.8256,14.1022,18.3258,0.236724,0.864274,30.3595,75.9,4228,6.0,False
-operational,48,ok,,XGBoost,tabular_boosting,2,2.5259,14.1687,18.4747,0.224272,0.833427,29.513,75.9,4228,7.0,False
-operational,48,ok,,RandomForest,tabular_tree,2,6.3685,14.2101,18.7372,0.202073,0.841279,30.46,75.9,4228,8.0,False
-operational,48,ok,,RollingMean_168h,corrected_baseline,0,0.0,14.2178,19.6354,0.123739,0.73023,46.7125,75.9,4228,9.0,False
-operational,48,ok,,RollingMean_24h,corrected_baseline,0,0.0,15.1645,21.0195,-0.004149,0.627033,40.0873,75.9,4228,10.0,False
-operational,48,ok,,Persistence,corrected_baseline,0,0.0,15.2226,21.2769,-0.028896,0.647224,34.7432,75.9,4228,11.0,False
-operational,48,ok,,WindowMLP_168h,sequential_window,3,18.5788,16.3158,22.1878,-0.118881,0.655076,41.5621,75.9,4228,12.0,False
-operational,48,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,17.986,25.437,-0.470573,0.660123,49.7103,75.9,4228,13.0,False
-operational,48,error,"Number of samples `14,796` in the input data is greater than the maximum number of samples `10,000` officially supported by TabPFN. Set `ignore_pretraining_limits=True` to override this error!",TabPFNRegressor_v2,tabular_foundation,3,0.0,,,,,,,0,,False
-operational,72,ok,,Ridge,tabular_linear,1,0.0226,13.4648,17.8789,0.274032,0.747469,34.2529,75.9,4223,1.0,True
-operational,72,ok,,ElasticNet,tabular_linear,1,3.59,13.6548,18.0255,0.262076,0.749156,33.3858,75.9,4223,2.0,False
-operational,72,ok,,WindowRidge_168h,sequential_window,2,0.0719,13.8787,18.9694,0.18277,0.715973,47.8896,75.9,4223,3.0,False
-operational,72,ok,,RollingMean_168h,corrected_baseline,0,0.0,14.5841,19.946,0.096459,0.733971,47.1469,75.9,4223,4.0,False
-operational,72,ok,,CatBoost,tabular_boosting,2,1.7522,14.8208,19.3018,0.153877,0.858268,31.9053,75.9,4223,5.0,False
-operational,72,ok,,ExtraTrees,tabular_tree,2,1.3584,14.9831,19.5687,0.130316,0.811586,33.6314,75.9,4223,6.0,False
-operational,72,ok,,XGBoost,tabular_boosting,2,0.8481,15.5616,20.3459,0.059866,0.813273,33.2409,75.9,4223,7.0,False
-operational,72,ok,,LightGBM,tabular_boosting,2,0.5361,15.6014,20.3894,0.055839,0.805399,32.7176,75.9,4223,8.0,False
-operational,72,ok,,RandomForest,tabular_tree,2,6.357,15.7172,20.8225,0.015301,0.776153,33.9266,75.9,4223,9.0,False
-operational,72,ok,,RollingMean_24h,corrected_baseline,0,0.0,16.6719,23.5082,-0.255094,0.592801,48.7006,75.9,4223,10.0,False
-operational,72,ok,,WindowMLP_168h,sequential_window,3,12.1291,16.8319,22.5888,-0.158843,0.691226,40.3369,75.9,4223,11.0,False
-operational,72,ok,,Persistence,corrected_baseline,0,0.0,17.4448,24.99,-0.418302,0.592238,47.9385,75.9,4223,12.0,False
-operational,72,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,17.9798,25.4327,-0.469006,0.659168,49.7103,75.9,4223,13.0,False
-operational,72,error,"Number of samples `14,779` in the input data is greater than the maximum number of samples `10,000` officially supported by TabPFN. Set `ignore_pretraining_limits=True` to override this error!",TabPFNRegressor_v2,tabular_foundation,3,0.0,,,,,,,0,,False
-oracle_weather,1,ok,,RandomForest,tabular_tree,2,5.7183,3.4683,6.248,0.91114,0.939496,10.6216,75.9,4237,1.0,False
-oracle_weather,1,ok,,LightGBM,tabular_boosting,2,0.345,3.5007,6.3248,0.90894,0.942857,10.9573,75.9,4237,2.0,True
-oracle_weather,1,ok,,XGBoost,tabular_boosting,2,1.094,3.5077,6.333,0.908706,0.943978,10.8651,75.9,4237,3.0,False
-oracle_weather,1,ok,,ExtraTrees,tabular_tree,2,1.3582,3.5574,6.3125,0.909296,0.945098,10.5094,75.9,4237,4.0,False
-oracle_weather,1,ok,,CatBoost,tabular_boosting,2,1.7241,3.5694,6.3071,0.90945,0.947899,10.2517,75.9,4237,5.0,False
-oracle_weather,1,ok,,Ridge,tabular_linear,1,0.0182,3.5859,6.4765,0.904519,0.942857,10.4734,75.9,4237,6.0,False
-oracle_weather,1,ok,,Persistence,corrected_baseline,0,0.0,3.5916,6.658,0.899093,0.92605,11.2803,75.9,4237,7.0,False
-oracle_weather,1,ok,,ElasticNet,tabular_linear,1,3.0426,3.6205,6.5072,0.903612,0.947339,10.4726,75.9,4237,8.0,False
-oracle_weather,1,ok,,WindowRidge_168h,sequential_window,2,0.0772,5.6565,9.0333,0.814251,0.882913,17.9625,75.9,4237,9.0,False
-oracle_weather,1,ok,,WindowMLP_168h,sequential_window,3,6.0619,6.0566,9.2981,0.803204,0.847619,17.4164,75.9,4237,10.0,False
-oracle_weather,1,ok,,RollingMean_24h,corrected_baseline,0,0.0,9.0337,12.842,0.624597,0.782073,24.8668,75.9,4237,11.0,False
-oracle_weather,1,ok,,RollingMean_168h,corrected_baseline,0,0.0,12.4153,17.4752,0.304857,0.752381,41.1968,75.9,4237,12.0,False
-oracle_weather,1,ok,,SeasonalNaive_24h,corrected_baseline,0,0.0,12.6795,17.8532,0.274462,0.710924,32.893,75.9,4237,13.0,False
-oracle_weather,1,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,18.0717,25.5543,-0.486478,0.660504,49.7103,75.9,4237,14.0,False
-oracle_weather,1,error,"Number of samples `14,828` in the input data is greater than the maximum number of samples `10,000` officially supported by TabPFN. Set `ignore_pretraining_limits=True` to override this error!",TabPFNRegressor_v2,tabular_foundation,3,0.0,,,,,,,0,,False
-oracle_weather,24,ok,,RandomForest,tabular_tree,2,6.2111,11.2955,14.8921,0.495305,0.859384,22.6677,75.9,4233,1.0,True
-oracle_weather,24,ok,,WindowRidge_168h,sequential_window,2,0.0907,11.4763,15.9148,0.423601,0.741737,38.4242,75.9,4233,2.0,False
-oracle_weather,24,ok,,CatBoost,tabular_boosting,2,2.0668,11.7693,15.1973,0.474405,0.882353,21.9479,75.9,4233,3.0,False
-oracle_weather,24,ok,,ElasticNet,tabular_linear,1,2.7254,11.9214,15.5291,0.451206,0.887395,27.8079,75.9,4233,4.0,False
-oracle_weather,24,ok,,Ridge,tabular_linear,1,0.0158,11.9393,15.5455,0.450045,0.888515,27.848,75.9,4233,5.0,False
-oracle_weather,24,ok,,XGBoost,tabular_boosting,2,1.1141,12.087,15.6359,0.44363,0.878992,20.699,75.9,4233,6.0,False
-oracle_weather,24,ok,,LightGBM,tabular_boosting,2,0.5575,12.2067,15.8346,0.429401,0.888515,20.745,75.9,4233,7.0,False
-oracle_weather,24,ok,,ExtraTrees,tabular_tree,2,1.6251,12.2106,15.6093,0.445517,0.885714,23.6955,75.9,4233,8.0,False
-oracle_weather,24,ok,,Persistence,corrected_baseline,0,0.0,12.6739,17.8492,0.274973,0.710924,32.893,75.9,4233,9.0,False
-oracle_weather,24,ok,,SeasonalNaive_24h,corrected_baseline,0,0.0,12.6739,17.8492,0.274973,0.710924,32.893,75.9,4233,9.0,False
-oracle_weather,24,ok,,RollingMean_24h,corrected_baseline,0,0.0,12.832,17.6161,0.293785,0.692437,33.8234,75.9,4233,11.0,False
-oracle_weather,24,ok,,RollingMean_168h,corrected_baseline,0,0.0,13.4941,18.7888,0.196624,0.731092,44.5916,75.9,4233,12.0,False
-oracle_weather,24,ok,,WindowMLP_168h,sequential_window,3,11.9815,13.8588,19.1429,0.166058,0.682913,36.8015,75.9,4233,13.0,False
-oracle_weather,24,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,18.0511,25.5368,-0.484061,0.660504,49.7103,75.9,4233,14.0,False
-oracle_weather,24,error,"Number of samples `14,812` in the input data is greater than the maximum number of samples `10,000` officially supported by TabPFN. Set `ignore_pretraining_limits=True` to override this error!",TabPFNRegressor_v2,tabular_foundation,3,0.0,,,,,,,0,,False
-oracle_weather,48,ok,,WindowRidge_168h,sequential_window,2,0.0667,13.0492,17.8389,0.276422,0.722534,43.673,75.9,4228,1.0,True
-oracle_weather,48,ok,,Ridge,tabular_linear,1,0.0142,13.8565,17.5728,0.297851,0.910314,30.8207,75.9,4228,2.0,False
-oracle_weather,48,ok,,ElasticNet,tabular_linear,1,2.7022,13.9695,17.665,0.290459,0.910314,30.1473,75.9,4228,3.0,False
-oracle_weather,48,ok,,RollingMean_168h,corrected_baseline,0,0.0,14.2228,19.6429,0.122671,0.730381,46.7125,75.9,4228,4.0,False
-oracle_weather,48,ok,,WindowMLP_168h,sequential_window,3,8.0222,15.1659,20.5485,0.039918,0.707399,39.3777,75.9,4228,5.0,False
-oracle_weather,48,ok,,RollingMean_24h,corrected_baseline,0,0.0,15.1841,21.0683,-0.009269,0.627242,40.0873,75.9,4228,6.0,False
-oracle_weather,48,ok,,CatBoost,tabular_boosting,2,1.7022,15.1936,19.1113,0.169517,0.924888,24.2031,75.9,4228,7.0,False
-oracle_weather,48,ok,,Persistence,corrected_baseline,0,0.0,15.2496,21.3542,-0.036853,0.647422,34.7432,75.9,4228,8.0,False
-oracle_weather,48,ok,,ExtraTrees,tabular_tree,2,1.19,16.1805,20.1486,0.076916,0.904709,27.3433,75.9,4228,9.0,False
-oracle_weather,48,ok,,LightGBM,tabular_boosting,2,0.3776,16.2375,20.528,0.041828,0.92657,25.1671,75.9,4228,10.0,False
-oracle_weather,48,ok,,RandomForest,tabular_tree,2,5.2638,16.271,20.5573,0.039088,0.921525,27.3952,75.9,4228,11.0,False
-oracle_weather,48,ok,,XGBoost,tabular_boosting,2,0.9486,16.2908,20.664,0.029093,0.910314,26.3896,75.9,4228,12.0,False
-oracle_weather,48,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,17.9945,25.4494,-0.472672,0.660314,49.7103,75.9,4228,13.0,False
-oracle_weather,48,error,"Number of samples `14,795` in the input data is greater than the maximum number of samples `10,000` officially supported by TabPFN. Set `ignore_pretraining_limits=True` to override this error!",TabPFNRegressor_v2,tabular_foundation,3,0.0,,,,,,,0,,False
-oracle_weather,72,ok,,WindowRidge_168h,sequential_window,2,0.0772,13.8784,18.969,0.182564,0.716133,47.8896,75.9,4223,1.0,True
-oracle_weather,72,ok,,RollingMean_168h,corrected_baseline,0,0.0,14.5838,19.9457,0.096221,0.73412,47.1469,75.9,4223,2.0,False
-oracle_weather,72,ok,,Ridge,tabular_linear,1,0.0187,14.5968,18.5644,0.217064,0.9095,32.654,75.9,4223,3.0,False
-oracle_weather,72,ok,,ElasticNet,tabular_linear,1,2.7311,14.8289,18.8325,0.194285,0.913435,32.1113,75.9,4223,4.0,False
-oracle_weather,72,ok,,RollingMean_24h,corrected_baseline,0,0.0,16.6799,23.5194,-0.256661,0.59303,48.7006,75.9,4223,5.0,False
-oracle_weather,72,ok,,WindowMLP_168h,sequential_window,3,11.9238,16.8346,22.5917,-0.159485,0.6914,40.3369,75.9,4223,6.0,False
-oracle_weather,72,ok,,CatBoost,tabular_boosting,2,1.7499,17.2144,21.5161,-0.0517,0.921304,26.2002,75.9,4223,7.0,False
-oracle_weather,72,ok,,ExtraTrees,tabular_tree,2,1.4131,17.4495,21.9397,-0.093524,0.916245,28.9427,75.9,4223,8.0,False
-oracle_weather,72,ok,,Persistence,corrected_baseline,0,0.0,17.4609,25.0296,-0.423221,0.592468,47.9385,75.9,4223,9.0,False
-oracle_weather,72,ok,,LightGBM,tabular_boosting,2,0.4143,17.5549,22.2228,-0.121925,0.915683,26.52,75.9,4223,10.0,False
-oracle_weather,72,ok,,XGBoost,tabular_boosting,2,0.9472,17.8177,22.544,-0.154593,0.897133,26.6288,75.9,4223,11.0,False
-oracle_weather,72,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,17.977,25.4312,-0.469268,0.659359,49.7103,75.9,4223,12.0,False
-oracle_weather,72,ok,,RandomForest,tabular_tree,2,5.2221,19.3644,24.9145,-0.410162,0.9095,27.5435,75.9,4223,13.0,False
-oracle_weather,72,error,"Number of samples `14,779` in the input data is greater than the maximum number of samples `10,000` officially supported by TabPFN. Set `ignore_pretraining_limits=True` to override this error!",TabPFNRegressor_v2,tabular_foundation,3,0.0,,,,,,,0,,False
+mode,horizon,status,error,model,group,complexity_rank,runtime_seconds,MAE,RMSE,R2,recall_unhealthy_plus,mae_top5,threshold_95,n_test,tuned,best_params,rank_mae,selected_champion
+operational,1,ok,,ElasticNet,tabular_linear,1,5.0581,6.0196,10.7178,0.891562,0.952353,13.8333,121.1,2172,True,"{""elasticnet__l1_ratio"": 0.95, ""elasticnet__alpha"": 0.1}",1.0,False
+operational,1,ok,,SARIMAX,statistical,1,27.5435,6.0606,10.7524,0.890861,0.951757,13.5417,121.1,2172,False,,2.0,False
+operational,1,ok,,Ridge,tabular_linear,1,3.019,6.0777,10.7241,0.891434,0.946397,13.5159,121.1,2172,True,"{""ridge__alpha"": 100.0}",3.0,True
+operational,1,ok,,ExtraTrees,tabular_tree,2,0.9074,6.16,10.8225,0.889434,0.9595,15.505,121.1,2172,False,,4.0,False
+operational,1,ok,,XGBoost,tabular_boosting,2,33.2396,6.1779,10.7974,0.889945,0.963669,17.8972,121.1,2172,True,"{""subsample"": 0.6, ""n_estimators"": 100, ""max_depth"": 4, ""learning_rate"": 0.05, ""colsample_bytree"": 0.7}",5.0,False
+operational,1,ok,,RandomForest,tabular_tree,2,4.0603,6.1782,11.0616,0.884494,0.953544,14.6648,121.1,2172,False,,6.0,False
+operational,1,ok,,LightGBM,tabular_boosting,2,43.2722,6.1807,10.8943,0.887962,0.966647,16.272,121.1,2172,True,"{""subsample"": 1.0, ""num_leaves"": 63, ""n_estimators"": 500, ""max_depth"": 4, ""learning_rate"": 0.01, ""colsample_bytree"": 0.8}",7.0,False
+operational,1,ok,,Persistence,corrected_baseline,0,0.0,6.2568,11.3591,0.878197,0.9595,13.3191,121.1,2172,,,8.0,False
+operational,1,ok,,WindowRidge_168h,sequential_window,2,0.5983,9.9509,16.4666,0.744038,0.941036,22.9169,121.1,2172,True,"{""ridge__alpha"": 20.0}",9.0,False
+operational,1,ok,,WindowMLP_168h,sequential_window,3,4.1501,11.9564,18.1462,0.689159,0.923764,25.8125,121.1,2172,False,,10.0,False
+operational,1,ok,,RollingMean_24h,corrected_baseline,0,0.0,15.4519,22.7921,0.509618,0.914235,39.875,121.1,2172,,,11.0,False
+operational,1,ok,,RollingMean_168h,corrected_baseline,0,0.0,19.4415,26.8816,0.317851,0.929124,55.8987,121.1,2172,,,12.0,False
+operational,1,ok,,SeasonalNaive_24h,corrected_baseline,0,0.0,20.9465,31.5701,0.059153,0.8648,54.2391,121.1,2172,,,13.0,False
+operational,1,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,28.8193,40.9452,-0.582611,0.837403,70.3673,121.1,2172,,,14.0,False
+operational,24,ok,,ElasticNet,tabular_linear,1,5.398,18.9246,28.2343,0.24783,0.928358,75.0473,121.1,2168,True,"{""elasticnet__l1_ratio"": 0.5, ""elasticnet__alpha"": 1.0}",1.0,True
+operational,24,ok,,RandomForest,tabular_tree,2,4.0648,19.065,28.7758,0.2187,0.92,82.5446,121.1,2168,False,,2.0,False
+operational,24,ok,,XGBoost,tabular_boosting,2,30.8022,19.1403,28.9527,0.209066,0.920597,84.8915,121.1,2168,True,"{""subsample"": 0.9, ""n_estimators"": 800, ""max_depth"": 4, ""learning_rate"": 0.01, ""colsample_bytree"": 0.8}",3.0,False
+operational,24,ok,,LightGBM,tabular_boosting,2,30.5187,19.1498,28.9073,0.211545,0.931343,84.0939,121.1,2168,True,"{""subsample"": 1.0, ""num_leaves"": 63, ""n_estimators"": 500, ""max_depth"": 4, ""learning_rate"": 0.01, ""colsample_bytree"": 0.8}",4.0,False
+operational,24,ok,,WindowRidge_168h,sequential_window,2,0.5971,19.2749,27.1485,0.304571,0.945672,56.7505,121.1,2168,True,"{""ridge__alpha"": 100.0}",5.0,False
+operational,24,ok,,SARIMAX,statistical,1,23.8199,19.2904,28.9105,0.211367,0.952836,81.9036,121.1,2168,False,,6.0,False
+operational,24,ok,,ExtraTrees,tabular_tree,2,0.9348,19.2977,28.951,0.209156,0.934328,84.3208,121.1,2168,False,,7.0,False
+operational,24,ok,,Ridge,tabular_linear,1,0.3158,20.1016,29.6412,0.171002,0.842388,76.5117,121.1,2168,True,"{""ridge__alpha"": 200.0}",8.0,False
+operational,24,ok,,RollingMean_168h,corrected_baseline,0,0.0,20.8819,28.6294,0.226633,0.92,61.6892,121.1,2168,,,9.0,False
+operational,24,ok,,Persistence,corrected_baseline,0,0.0,20.9493,31.5798,0.059016,0.864478,54.2391,121.1,2168,,,10.0,False
+operational,24,ok,,SeasonalNaive_24h,corrected_baseline,0,0.0,20.9493,31.5798,0.059016,0.864478,54.2391,121.1,2168,,,10.0,False
+operational,24,ok,,RollingMean_24h,corrected_baseline,0,0.0,21.0357,29.5893,0.1739,0.865672,60.005,121.1,2168,,,12.0,False
+operational,24,ok,,WindowMLP_168h,sequential_window,3,6.1937,24.6879,33.1223,-0.035149,0.808358,57.2698,121.1,2168,False,,13.0,False
+operational,24,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,28.8307,40.9597,-0.582981,0.837015,70.3673,121.1,2168,,,14.0,False
+operational,48,ok,,WindowRidge_168h,sequential_window,2,0.5776,21.0982,28.9469,0.21107,0.973054,68.4414,121.1,2163,True,"{""ridge__alpha"": 200.0}",1.0,True
+operational,48,ok,,ElasticNet,tabular_linear,1,5.4257,21.4891,31.248,0.080652,0.943114,90.1858,121.1,2163,True,"{""elasticnet__l1_ratio"": 0.5, ""elasticnet__alpha"": 1.0}",2.0,False
+operational,48,ok,,ExtraTrees,tabular_tree,2,0.912,21.8414,30.2352,0.139281,0.944311,81.1227,121.1,2163,False,,3.0,False
+operational,48,ok,,RollingMean_168h,corrected_baseline,0,0.0,21.9349,29.764,0.165901,0.920359,63.7904,121.1,2163,,,4.0,False
+operational,48,ok,,XGBoost,tabular_boosting,2,30.0557,22.0523,31.2914,0.078101,0.973054,89.4809,121.1,2163,True,"{""subsample"": 0.6, ""n_estimators"": 500, ""max_depth"": 3, ""learning_rate"": 0.03, ""colsample_bytree"": 0.6}",5.0,False
+operational,48,ok,,SARIMAX,statistical,1,25.5149,22.3285,32.6233,-0.002054,0.915569,93.6777,121.1,2163,False,,6.0,False
+operational,48,ok,,LightGBM,tabular_boosting,2,31.0616,22.7252,31.27,0.07936,0.944311,85.5576,121.1,2163,True,"{""subsample"": 0.6, ""num_leaves"": 15, ""n_estimators"": 800, ""max_depth"": 6, ""learning_rate"": 0.03, ""colsample_bytree"": 0.6}",7.0,False
+operational,48,ok,,RollingMean_24h,corrected_baseline,0,0.0,22.7361,31.3119,0.076891,0.852695,65.9223,121.1,2163,,,8.0,False
+operational,48,ok,,Ridge,tabular_linear,1,0.3019,23.1045,33.5513,-0.05987,0.856287,96.5321,121.1,2163,True,"{""ridge__alpha"": 200.0}",9.0,False
+operational,48,ok,,RandomForest,tabular_tree,2,3.9715,23.5893,32.4131,0.010819,0.915569,83.6103,121.1,2163,False,,10.0,False
+operational,48,ok,,Persistence,corrected_baseline,0,0.0,24.8073,35.0138,-0.154283,0.835329,65.2545,121.1,2163,,,11.0,False
+operational,48,ok,,WindowMLP_168h,sequential_window,3,6.1758,28.536,37.7102,-0.338914,0.762275,70.5331,121.1,2163,False,,12.0,False
+operational,48,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,28.8826,41.0057,-0.583155,0.836527,70.3673,121.1,2163,,,13.0,False
+operational,72,ok,,WindowRidge_168h,sequential_window,2,0.6039,22.5569,30.6277,0.118718,0.974174,72.4808,121.145,2158,True,"{""ridge__alpha"": 200.0}",1.0,True
+operational,72,ok,,RollingMean_168h,corrected_baseline,0,0.0,22.8051,30.967,0.099089,0.906306,66.1922,121.145,2158,,,2.0,False
+operational,72,ok,,ElasticNet,tabular_linear,1,5.0058,23.222,33.1884,-0.034804,0.953153,93.771,121.145,2158,True,"{""elasticnet__l1_ratio"": 0.5, ""elasticnet__alpha"": 1.0}",3.0,False
+operational,72,ok,,RollingMean_24h,corrected_baseline,0,0.0,23.6098,33.0169,-0.024136,0.854054,62.4116,121.145,2158,,,4.0,False
+operational,72,ok,,XGBoost,tabular_boosting,2,31.942,23.7152,32.9859,-0.022213,0.952553,88.9974,121.145,2158,True,"{""subsample"": 0.6, ""n_estimators"": 500, ""max_depth"": 3, ""learning_rate"": 0.03, ""colsample_bytree"": 0.6}",5.0,False
+operational,72,ok,,SARIMAX,statistical,1,22.7146,24.2999,35.1423,-0.16023,0.859459,98.9284,121.145,2158,False,,6.0,False
+operational,72,ok,,Ridge,tabular_linear,1,0.3435,24.8982,35.8153,-0.205096,0.846246,100.8322,121.145,2158,True,"{""ridge__alpha"": 200.0}",7.0,False
+operational,72,ok,,ExtraTrees,tabular_tree,2,0.916,25.3823,35.2035,-0.164275,0.921922,85.8985,121.145,2158,False,,8.0,False
+operational,72,ok,,Persistence,corrected_baseline,0,0.0,25.4339,36.0942,-0.223942,0.826426,60.988,121.145,2158,,,9.0,False
+operational,72,ok,,RandomForest,tabular_tree,2,3.9996,27.0097,36.3182,-0.239175,0.932132,84.7076,121.145,2158,False,,10.0,False
+operational,72,ok,,LightGBM,tabular_boosting,2,25.9309,27.8579,37.2862,-0.306114,0.871471,84.0216,121.145,2158,True,"{""subsample"": 0.9, ""num_leaves"": 127, ""n_estimators"": 500, ""max_depth"": -1, ""learning_rate"": 0.15, ""colsample_bytree"": 0.7}",11.0,False
+operational,72,ok,,SeasonalNaive_168h,corrected_baseline,0,0.0,28.9272,41.0504,-0.583137,0.836036,70.6472,121.145,2158,,,12.0,False
+operational,72,ok,,WindowMLP_168h,sequential_window,3,6.1732,29.2187,38.2783,-0.376545,0.768168,60.8586,121.145,2158,False,,13.0,False

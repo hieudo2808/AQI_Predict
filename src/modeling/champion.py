@@ -73,17 +73,22 @@ def load_model_for_horizon(
     entry = get_champion_entry(horizon, manifest)
     if entry:
         artifact_path = root_path / entry["artifact_path"]
-        model = joblib.load(artifact_path)
-        model_name = entry.get("model_name", "Champion")
-        return _bundle(
-            model=model,
-            label=f"Champion: {model_name}",
-            source="champion",
-            horizon=horizon,
-            feature_columns=entry.get("feature_columns"),
-            metadata=entry,
-            uses_future_weather_forecast=bool(entry.get("uses_future_weather_forecast", False)),
-        )
+        if artifact_path.exists():
+            model = joblib.load(artifact_path)
+            model_name = entry.get("model_name", "Champion")
+            return _bundle(
+                model=model,
+                label=f"Champion: {model_name}",
+                source="champion",
+                horizon=horizon,
+                feature_columns=entry.get("feature_columns"),
+                metadata=entry,
+                uses_future_weather_forecast=bool(entry.get("uses_future_weather_forecast", False)),
+            )
+
+        # Manifest can drift from filesystem when champion artifacts are not exported.
+        # Fall back to legacy artifacts instead of failing the whole dashboard.
+        entry = None
 
     xgb_path = root_path / "models" / f"xgb_t{horizon}.json"
     if xgb_path.exists():
