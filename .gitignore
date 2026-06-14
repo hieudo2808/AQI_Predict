@@ -192,3 +192,9 @@ models/*.joblib
 models/model_selection/
 models/champions/*.joblib
 catboost_info/
+
+# Ignore data, metadata, and report archives
+data/
+metadata/
+reports/archive/
+
