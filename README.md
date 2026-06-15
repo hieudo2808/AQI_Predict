@@ -1,114 +1,164 @@
-# Dự báo US AQI tại Hà Nội
+# PM2.5 Hanoi Forecasting
 
-## 1. Tiêu đề và Giới thiệu (Title & Introduction)
+Dự án dự báo PM2.5 theo giờ cho một trạm tại Hà Nội, quy đổi kết quả sang US AQI và hiển thị trên dashboard Streamlit. Luồng chuẩn của project là chạy đầy đủ dữ liệu và mô hình có thể chạy trong môi trường, so sánh bằng cùng một split thời gian, chọn champion theo `operational` leaderboard, rồi đưa champion đó ra giao diện.
 
-Dự báo chất lượng không khí (nồng độ bụi mịn PM2.5) tại Hà Nội và quy đổi sang chỉ số US AQI chuẩn EPA.
+Kết luận "model mạnh nhất" trong project này nghĩa là model có kết quả tốt nhất trên test holdout theo rule đã định: MAE thấp nhất theo từng horizon; nếu chênh trong 1% thì chọn model đơn giản hơn hoặc nhanh hơn. `oracle_weather` chỉ là upper-bound vì dùng actual future weather, không được dùng làm model chạy app.
 
-- **Bài toán đang giải quyết:** Chuỗi thời gian đa biến (Multivariate Time Series Forecasting) dưới dạng Hồi quy (Regression), kết hợp phân loại ngầm định các mức độ cảnh báo chất lượng không khí.
-- **Mục tiêu kinh doanh/nghiên cứu:** Cảnh báo mức độ ô nhiễm không khí tại 3 khung thời gian trong tương lai (t+1h, t+24h, t+72h) để hỗ trợ người dân và cơ quan đưa ra các quyết định sinh hoạt và lập kế hoạch dài hạn. Dự án áp dụng kiến trúc MLOps Level 1 với hệ thống quản lý siêu dữ liệu (metadata) nhằm tự động hóa quy trình.
+## Flow Từ Đầu
 
-## 2. Cấu trúc thư mục (Project Structure)
+Người dùng chưa có gì nên chạy theo thứ tự này:
+
+| Bước | Lệnh chính                       | Kết quả                                      |
+| ---- | -------------------------------- | -------------------------------------------- |
+| 0    | Tạo môi trường và cài dependency | Python env chạy được toàn bộ pipeline        |
+| 1    | Cấu hình `.env`                  | Có key để tải dữ liệu và chạy TabPFN nếu cần |
+| 2    | Ingestion                        | Có raw PM2.5/weather data                    |
+| 3    | Feature pipeline                 | Có `features_targets.parquet`                |
+| 4    | Full model selection             | Có leaderboard và champion artifacts         |
+| 5    | Dashboard                        | Giao diện dùng champion model để dự đoán     |
+| 6    | Tests                            | Xác nhận codebase không lỗi                  |
+
+## Bước 0: Tạo Môi Trường
+
+Chạy một lần trên máy mới:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --upgrade pip
+.\.venv\Scripts\pip.exe install -r requirements-modeling.txt
+```
+
+`requirements-modeling.txt` đã bao gồm `requirements.txt`, nên đây là môi trường đầy đủ để chạy benchmark khoa học dữ liệu. File `requirements.txt` chỉ dùng cho môi trường chỉ chạy app, không phải flow chính để chọn model tốt nhất.
+
+Kết quả mong đợi: import được các package chính; model nào không tương thích với Python/GPU/license hiện tại sẽ được pipeline ghi rõ trong model card.
+
+Kiểm tra môi trường:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.pipelines.model_selection_pipeline --preflight
+```
+
+## Bước 1: Cấu Hình Key
+
+Tạo file `.env` ở thư mục gốc nếu chưa có:
 
 ```text
-PM25_NMKHDL/
-├── data/
-│   ├── raw/                            # Data Lake chứa dữ liệu gốc dạng Parquet (phân mảnh theo year/month)
-│   └── features/                       # Dữ liệu bảng đặc trưng (features_targets.parquet)
-├── metadata/                           # Các file theo dõi trạng thái cập nhật (data_freshness.json)
-├── models/                             # Các mô hình XGBoost (.json) và SARIMA (.pkl) đã huấn luyện
-├── reports/
-│   └── figures/                        # Kết xuất biểu đồ phân tích (EDA, SHAP, kết quả Backtest)
-├── src/
-│   ├── pipelines/                      # Các luồng xử lý độc lập
-│   │   ├── ingestion_pipeline.py       # Tải dữ liệu Delta từ API
-│   │   ├── feature_pipeline.py         # Kỹ nghệ đặc trưng
-│   │   ├── training_pipeline.py        # Huấn luyện mô hình và đánh giá
-│   │   └── prediction_pipeline.py      # Module suy luận (Inference)
-│   └── ui/
-│       └── app_streamlit.py            # Giao diện web Dashboard
-├── requirements.txt                    # Danh sách thư viện cần thiết
-└── README.md                           # Tài liệu giới thiệu dự án
+PURPLEAIR_READ_KEY=your_purpleair_key_here
+TABPFN_TOKEN=your_priorlabs_key_here
+TABPFN_MODEL_CACHE_DIR=models/model_selection/tabpfn_cache
 ```
 
-## 3. Môi trường và Cài đặt (Installation/Setup)
+`PURPLEAIR_READ_KEY` dùng để tải dữ liệu PM2.5 từ PurpleAir. Open-Meteo không cần key. `TABPFN_TOKEN` dùng khi chạy TabPFN; nếu không có hoặc TabPFN không chạy được, pipeline vẫn chạy các model còn lại và ghi lý do skip trong `reports/model_selection/model_cards.md`.
 
-Khuyến nghị sử dụng Python 3.10 trở lên.
+## Bước 2: Tải Dữ Liệu Raw
 
-```bash
-# Tạo môi trường ảo (Khuyến nghị)
-python -m venv .venv
-
-# Kích hoạt môi trường (Windows PowerShell)
-.venv\Scripts\activate
-
-# Cài đặt thư viện
-pip install -r requirements.txt
+```powershell
+.\.venv\Scripts\python.exe -m src.pipelines.ingestion_pipeline
 ```
 
-## 4. Dữ liệu (Dataset)
+Lệnh này đọc `metadata/data_freshness.json`, tải thêm dữ liệu PM2.5/PM10 từ PurpleAir và dữ liệu thời tiết từ Open-Meteo.
 
-Dự án **không** lưu trữ file dữ liệu lớn trực tiếp mà sử dụng Ingestion Pipeline để tự động tải và cập nhật.
+Kết quả sinh ra:
 
-- **Nguồn dữ liệu:**
-  - Ô nhiễm không khí thực đo (PM2.5, PM10, CO): Trích xuất từ API của OpenAQ (Trạm đo tại Đại sứ quán Mỹ - Hà Nội).
-  - Dữ liệu thời tiết (Nhiệt độ, độ ẩm, tốc độ gió, lượng mưa): Lấy từ API lịch sử (Archive) của Open-Meteo.
-- **Quy trình tiền xử lý (Preprocessing):**
-  - Chuẩn hóa Timezone về `Asia/Ho_Chi_Minh`.
-  - Xử lý giá trị khuyết thiếu bằng nội suy tuyến tính (Linear Interpolation) cho khoảng trống ngắn và Forward Fill cho khoảng trống dài.
-  - Khởi tạo các biến cờ (Missing flags) và gạt bỏ các giá trị ngoại lai (Extreme outliers) do lỗi cảm biến.
-- **Cách tải dữ liệu:** Chạy lệnh `python -m src.pipelines.ingestion_pipeline` để hệ thống tự động kéo dữ liệu lịch sử và các điểm dữ liệu mới nhất.
+- `data/raw/aq/`
+- `data/raw/weather/`
+- `metadata/data_freshness.json`
 
-## 5. Mô hình và Phương pháp (Methodology/Modeling)
+Nếu chạy từ máy hoàn toàn mới, pipeline sẽ bắt đầu từ mốc mặc định `2024-01-01T00:00:00`.
 
-Dự án sử dụng phương pháp **Direct Strategy** (Huấn luyện các bộ mô hình độc lập cho từng khung thời gian dự báo) để triệt tiêu hoàn toàn sai số lũy kế.
+## Bước 3: Tạo Feature Và Target
 
-- **Kiến trúc mô hình:**
-  - **XGBoost (XGBRegressor):** Thuật toán chính giúp nắm bắt các mối quan hệ phi tuyến tính phức tạp giữa nồng độ chất ô nhiễm và biến đổi thời tiết.
-  - **SARIMA:** Mô hình thống kê cơ sở, hỗ trợ nắm bắt mạnh yếu tố chu kỳ/mùa vụ tuyến tính.
-- **Kỹ nghệ đặc trưng (Feature Engineering - 35 biến):**
-  - **Biến Độ trễ (Lag):** Trạng thái PM2.5 ở 1h, 24h, 72h trước đó.
-  - **Biến Trượt (Rolling statistics):** Trung bình và độ lệch chuẩn của nồng độ PM2.5 trong các cửa sổ thời gian.
-  - **Biến Chu kỳ (Cyclical):** Mã hóa Giờ, Tháng thành dạng `sin/cos` để bảo toàn tính tuần hoàn.
-- **Giải thích mô hình (Explainable AI - XAI):**
-  - Tích hợp công cụ **SHAP** để bóc tách độ quan trọng của các đặc trưng (Summary Plot) và lý giải cụ thể nguyên nhân tại thời điểm ô nhiễm nghiêm trọng (Waterfall Plot).
-
-## 6. Đánh giá và Kết quả (Evaluation & Results)
-
-Chiến lược kiểm định sử dụng Walk-forward Spliting (Train: 70%, Valid: 10%, Test: 20%). Mô hình được đánh giá khắt khe qua 5 kịch bản (K1 - K5). Dưới đây là kết quả của mô hình XGBoost:
-
-| Khung thời gian (Horizon) | MAE (µg/m³) | RMSE (µg/m³) | F1-Macro (Cảnh báo AQI) |
-| ------------------------- | ----------- | ------------ | ----------------------- |
-| t+1h                      | 9.73        | 13.66        | 0.492                   |
-| t+24h                     | 19.39       | 27.67        | 0.238                   |
-| t+72h                     | 21.45       | 29.62        | 0.182                   |
-
-_(Lưu ý: Các hình ảnh trực quan biểu đồ SHAP và Confusion Matrix được tạo tự động sau quá trình huấn luyện và lưu tại thư mục `reports/figures/`)_.
-
-## 7. Hướng dẫn sử dụng (Usage)
-
-### 7.1. Chạy Ứng dụng Web (Dashboard)
-
-Để quan sát kết quả trực tiếp thông qua Bảng điều khiển (Inference):
-
-```bash
-streamlit run src/ui/app_streamlit.py
+```powershell
+.\.venv\Scripts\python.exe -m src.pipelines.feature_pipeline
 ```
 
-### 7.2. Luồng Thực thi (Pipeline Architecture)
+Lệnh này merge air-quality data với weather data, xử lý missing values, tạo lag/rolling/calendar features và sinh target cho các horizon `t+1h`, `t+24h`, `t+48h`, `t+72h`.
 
-Dự án được thiết kế theo kiến trúc **Module Separation**, nghĩa là các file xử lý lõi (như `src/modeling/train.py` hay `src/visualization/eda.py`) chỉ đóng vai trò là thư viện chứa hàm (module), **không thể tự chạy độc lập**.
+Kết quả sinh ra:
 
-Để toàn bộ hệ thống từ đầu đến cuối được vận hành, bạn chỉ cần chạy **3 Pipeline điều phối chính** theo đúng thứ tự sau:
+- `data/features/features_targets.parquet`
+- `metadata/feature_metadata.json`
 
-```bash
-# Pipeline 1: Tải và cập nhật dữ liệu Delta mới nhất từ API (Ingestion)
-python -m src.pipelines.ingestion_pipeline
+File `features_targets.parquet` là đầu vào duy nhất cho bước chọn model.
 
-# Pipeline 2: Làm sạch dữ liệu và tính toán lại 35 đặc trưng thời gian (Feature Engineering)
-# Lưu ý: Chỉ chạy khi Pipeline 1 có kéo được dữ liệu mới.
-python -m src.pipelines.feature_pipeline
+## Bước 4: Chạy Full Model Selection
 
-# Pipeline 3: Tự động gọi lần lượt Huấn luyện (Train), Đánh giá (Evaluate),
-# Vẽ biểu đồ (EDA) và Phân tích SHAP (Explainability).
-python -m src.pipelines.training_pipeline
+Đây là lệnh chính để so sánh toàn bộ model có thể chạy được trong môi trường:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.pipelines.model_selection_pipeline --mode both --run-neuralforecast --export-champions
 ```
+
+Lệnh này chạy:
+
+- Corrected baselines: Persistence, SeasonalNaive, RollingMean.
+- Tabular models: Ridge, ElasticNet, RandomForest, ExtraTrees, XGBoost, LightGBM, CatBoost.
+- Foundation/tabular model: TabPFN nếu dependency/token/môi trường cho phép.
+- Sequential/time-series models: NeuralForecast models nếu dependency tương thích.
+- `operational` mode để chọn champion thật cho app.
+- `oracle_weather` mode để đo upper-bound, không dùng làm deployment champion.
+
+Nguyên tắc benchmark: không loại model chỉ vì train lâu hoặc inference nặng. Runtime được ghi lại để phân tích trade-off, nhưng champion trước hết được chọn theo metric trên holdout test. TabPFN dùng toàn bộ training window hợp lệ như các model khác; project không tự cap số dòng train hoặc ép số estimator thấp, đồng thời bật `ignore_pretraining_limits=True` để TabPFN thử chạy cả khi số dòng vượt khuyến nghị chính thức 10,000 samples. Model chỉ bị skip khi môi trường thật sự không chạy được, ví dụ thiếu dependency, version không tương thích, thiếu token/license hoặc lỗi phần cứng; lý do skip phải nằm trong `model_cards.md`.
+
+Kết quả sinh ra:
+
+- `reports/model_selection/metrics.csv`: metric đầy đủ.
+- `reports/model_selection/leaderboard.md`: leaderboard tổng.
+- `reports/model_selection/final_leaderboard.md`: leaderboard operational dùng để chọn champion.
+- `reports/model_selection/runtime.csv`: runtime từng model.
+- `reports/model_selection/model_cards.md`: môi trường, model chạy/skip, manifest export.
+- `models/champions/manifest.json`: registry champion cho dashboard.
+- `models/champions/t*_*.joblib`: artifact champion theo horizon.
+
+Nếu mục tiêu là báo cáo hoặc kết luận model nào tốt nhất, dùng kết quả từ lệnh này. Không dùng quick run để kết luận.
+
+Champion hiện tại trong workspace:
+
+| Horizon |     Champion |     MAE |    RMSE | Vai trò           |
+| ------- | -----------: | ------: | ------: | ----------------- |
+| t+1h    | RandomForest |  3.4821 |  6.2596 | Nowcast ngắn hạn  |
+| t+24h   |        Ridge | 11.5001 | 15.7914 | Forecast vận hành |
+| t+48h   |        Ridge | 12.6485 | 16.9014 | Forecast vận hành |
+| t+72h   |        Ridge | 13.5593 | 18.0155 | Forecast vận hành |
+
+## Bước 5: Chạy Dashboard
+
+```powershell
+.\.venv\Scripts\streamlit.exe run src/ui/app_streamlit.py
+```
+
+Dashboard sẽ:
+
+- Đọc `data/features/features_targets.parquet`.
+- Load `models/champions/manifest.json`.
+- Dùng đúng champion model theo từng horizon.
+- Hiển thị PM2.5 dự báo, AQI, cấp cảnh báo và tên model đang dùng.
+
+Nếu chưa có champion registry, app có fallback sang artifact legacy, nhưng flow chuẩn là luôn chạy bước 4 trước để dashboard dùng champion mới nhất.
+
+## Lệnh Quick Chỉ Để Debug
+
+Lệnh này chỉ kiểm tra pipeline có chạy không:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.pipelines.model_selection_pipeline --mode operational --quick --export-champions
+```
+
+Không dùng kết quả quick run để viết báo cáo, chọn model cuối hoặc kết luận khoa học dữ liệu.
+
+## Cấu Trúc Kết Quả
+
+```text
+data/features/features_targets.parquet     # Feature table cuối cho model
+models/champions/manifest.json             # Registry champion deployment
+models/champions/*.joblib                  # Artifact champion theo horizon
+reports/model_selection/                   # Metric, leaderboard, runtime, model cards
+src/pipelines/ingestion_pipeline.py        # Lấy dữ liệu raw
+src/pipelines/feature_pipeline.py          # Tạo feature/target
+src/pipelines/model_selection_pipeline.py  # Chọn/export champion model
+src/pipelines/prediction_pipeline.py       # Kiểm tra freshness cho dashboard
+src/modeling/champion.py                   # Loader champion/legacy model
+src/ui/app_streamlit.py                    # Dashboard Streamlit
+```
+
+Các báo cáo cũ trong `reports/archive/` và draft trong `docs/archive/` chỉ để truy vết quyết định cũ. Kết quả model hiện hành lấy từ `reports/model_selection/`.

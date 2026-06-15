@@ -32,17 +32,18 @@ data_sources:
 
 # ─── Mục tiêu dự báo ───
 forecasting:
-  target: "us_aqi"
-  frequency: "daily"
+  target: "pm2_5"
+  frequency: "hourly"
   horizons:
-    - 1   # t+1: ngày mai
-    - 3   # t+3: 3 ngày
-    - 7   # t+7: 1 tuần
+    - 1   # t+1h: 1 giờ tới
+    - 24  # t+24h: 1 ngày tới
+    - 48  # t+48h: 2 ngày tới
+    - 72  # t+72h: 3 ngày tới
   strategy: "direct"  # Mỗi horizon 1 model riêng
 
 # ─── Đường dẫn dữ liệu ───
 paths:
-  raw_data: "data/hanoi-1581130/air_quality_historical.csv"
+  raw_data: "data/raw"
   processed_dir: "data/processed"
   features_dir: "data/features"
   models_dir: "models"
